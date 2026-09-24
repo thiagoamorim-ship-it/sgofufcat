@@ -1,72 +1,67 @@
 import React, { useState } from 'react';
 import { RetentionCalculatorUI } from './components/RetentionCalculatorUI';
+import { DanfeUploaderUI } from './components/DanfeUploaderUI';
+import { CndManagerUI } from './components/CndManagerUI';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'calc' | 'danfe' | 'cnd'>('calc');
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-      {/* Header do Sistema */}
-      <header className="bg-blue-900 text-white p-4 shadow-lg">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold tracking-wide">UFCAT | SGOFUFCAT</h1>
-          <span className="text-xs bg-blue-800 px-3 py-1 rounded-full border border-blue-700">
-            Sistema de Gestão Orçamentária e Financeira
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
+      {/* Topbar UFCAT */}
+      <header className="bg-[#0f2a4a] text-white p-4 shadow-md border-b border-blue-900">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/10 p-2 rounded text-xs font-bold tracking-wider">UFCAT</div>
+            <h1 className="text-lg font-bold">SGOFUFCAT - Superintendência de Gestão Orçamentária e Financeira</h1>
+          </div>
+          <span className="text-xs bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full">
+            Sistema Ativo
           </span>
         </div>
       </header>
 
-      {/* Navegação por Abas */}
-      <main className="max-w-6xl mx-auto p-6 space-y-6">
-        <div className="flex border-b border-slate-300 dark:border-slate-800 gap-2">
+      {/* Navigation Bar */}
+      <nav className="bg-[#163a63] text-white border-b border-blue-900/50">
+        <div className="max-w-7xl mx-auto flex gap-1 px-4">
           <button
             onClick={() => setActiveTab('calc')}
-            className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-colors ${
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 ${
               activeTab === 'calc'
-                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 border-t border-x border-slate-300 dark:border-slate-800'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                ? 'bg-white/10 text-white border-blue-400 font-semibold'
+                : 'text-blue-100 hover:bg-white/5 border-transparent'
             }`}
           >
-            1. Calculadora de Retenção
+            1. Calculadora & Parametrização
           </button>
           <button
             onClick={() => setActiveTab('danfe')}
-            className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-colors ${
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 ${
               activeTab === 'danfe'
-                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 border-t border-x border-slate-300 dark:border-slate-800'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                ? 'bg-white/10 text-white border-blue-400 font-semibold'
+                : 'text-blue-100 hover:bg-white/5 border-transparent'
             }`}
           >
-            2. Emissão / Leitura DANFE
+            2. Emissão DANFE / NFe
           </button>
           <button
             onClick={() => setActiveTab('cnd')}
-            className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-colors ${
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 ${
               activeTab === 'cnd'
-                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 border-t border-x border-slate-300 dark:border-slate-800'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                ? 'bg-white/10 text-white border-blue-400 font-semibold'
+                : 'text-blue-100 hover:bg-white/5 border-transparent'
             }`}
           >
-            3. Certidões & Regularidade (CND)
+            3. Certidão de Regularidade (CND)
           </button>
         </div>
+      </nav>
 
-        {/* Conteúdo das Abas */}
-        <div className="mt-4">
-          {activeTab === 'calc' && <RetentionCalculatorUI />}
-          {activeTab === 'danfe' && (
-            <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
-              <h3 className="text-lg font-bold mb-2">Importador de XML DANFE</h3>
-              <p className="text-slate-500 text-sm">Arraste ou selecione o arquivo XML da NFe para extrair os impostos automaticamente.</p>
-            </div>
-          )}
-          {activeTab === 'cnd' && (
-            <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
-              <h3 className="text-lg font-bold mb-2">Consulta de Certidões Negativas (CND)</h3>
-              <p className="text-slate-500 text-sm">Insira o CNPJ do fornecedor para validar regularidade fiscal na Receita Federal, FGTS e CNDT.</p>
-            </div>
-          )}
-        </div>
+      {/* Main View Container */}
+      <main className="max-w-7xl mx-auto p-6">
+        {activeTab === 'calc' && <RetentionCalculatorUI />}
+        {activeTab === 'danfe' && <DanfeUploaderUI />}
+        {activeTab === 'cnd' && <CndManagerUI />}
       </main>
     </div>
   );
