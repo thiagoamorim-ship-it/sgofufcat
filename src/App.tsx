@@ -6,6 +6,7 @@ import NotasFiscais from './pages/NotasFiscais';
 import Regularidade from './pages/Regularidade';
 import Retencoes from './pages/Retencoes';
 import Checklist from './pages/Checklist';
+import DisponibilidadeOrcamentaria from './pages/DisponibilidadeOrcamentaria';
 
 export default function App() {
   return (
@@ -16,7 +17,12 @@ export default function App() {
           <Route path="/notas-fiscais" element={<NotasFiscais />} />
           <Route path="/regularidade" element={<Regularidade />} />
           <Route path="/retencoes" element={<Retencoes />} />
+
           <Route path="/checklist" element={<Checklist />} />
+          <Route
+            path="/checklist/disponibilidade"
+            element={<DisponibilidadeOrcamentaria />}
+          />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
