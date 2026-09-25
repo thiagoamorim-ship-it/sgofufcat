@@ -27,7 +27,7 @@ const menuItems = [
     icon: Library,
     path: '/legislacao',
   },
-  { label: 'Checklist', icon: ClipboardCheck, path: '/checklist' },
+  { label: 'Guia Operacional', icon: ClipboardCheck, path: '/checklist' },
 ];
 
 const quickLinks = [
