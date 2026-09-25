@@ -9,6 +9,8 @@ import {
   LockKeyhole,
 } from 'lucide-react';
 
+import { Link } from 'react-router-dom';
+
 type Guide = {
   id: string;
   number: string;
@@ -17,6 +19,7 @@ type Guide = {
   icon: typeof Landmark;
   available: boolean;
   detail: string;
+  path?: string;
 };
 
 const guides: Guide[] = [
@@ -29,6 +32,7 @@ const guides: Guide[] = [
     icon: Landmark,
     available: true,
     detail: 'POP disponível',
+    path: '/checklist/disponibilidade',
   },
   {
     id: 'empenho',
@@ -117,17 +121,8 @@ export default function Checklist() {
           {guides.map((guide) => {
             const Icon = guide.icon;
 
-            return (
-              <button
-                key={guide.id}
-                type="button"
-                disabled={!guide.available}
-                className={`group relative rounded-2xl border p-6 text-left shadow-sm transition ${
-                  guide.available
-                    ? 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md'
-                    : 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-70'
-                }`}
-              >
+            const cardContent = (
+              <>
                 <div className="mb-5 flex items-start justify-between">
                   <div
                     className={`flex h-12 w-12 items-center justify-center rounded-xl ${
@@ -172,17 +167,49 @@ export default function Checklist() {
                     {guide.detail}
                   </span>
 
-                  {guide.available && (
+                  {guide.available && guide.path && (
                     <span className="flex items-center gap-1 text-sm font-semibold text-blue-700">
                       Abrir guia
+
                       <ArrowRight
                         size={16}
                         className="transition group-hover:translate-x-1"
                       />
                     </span>
                   )}
+
+                  {guide.available && !guide.path && (
+                    <span className="text-xs font-medium text-slate-400">
+                      Em preparação
+                    </span>
+                  )}
                 </div>
-              </button>
+              </>
+            );
+
+            if (guide.available && guide.path) {
+              return (
+                <Link
+                  key={guide.id}
+                  to={guide.path}
+                  className="group block rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+                >
+                  {cardContent}
+                </Link>
+              );
+            }
+
+            return (
+              <div
+                key={guide.id}
+                className={`relative rounded-2xl border p-6 text-left shadow-sm ${
+                  guide.available
+                    ? 'border-slate-200 bg-white'
+                    : 'border-slate-200 bg-slate-50 opacity-70'
+                }`}
+              >
+                {cardContent}
+              </div>
             );
           })}
         </div>
@@ -200,16 +227,42 @@ export default function Checklist() {
             </h2>
 
             <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-              <FlowItem number="1" label="Disponibilidade" active />
-              <ArrowRight size={15} className="text-slate-300" />
+              <FlowItem
+                number="1"
+                label="Disponibilidade"
+                active
+              />
 
-              <FlowItem number="2" label="Empenho" active />
-              <ArrowRight size={15} className="text-slate-300" />
+              <ArrowRight
+                size={15}
+                className="text-slate-300"
+              />
 
-              <FlowItem number="3" label="Liquidação" />
-              <ArrowRight size={15} className="text-slate-300" />
+              <FlowItem
+                number="2"
+                label="Empenho"
+                active
+              />
 
-              <FlowItem number="4" label="Pagamento" />
+              <ArrowRight
+                size={15}
+                className="text-slate-300"
+              />
+
+              <FlowItem
+                number="3"
+                label="Liquidação"
+              />
+
+              <ArrowRight
+                size={15}
+                className="text-slate-300"
+              />
+
+              <FlowItem
+                number="4"
+                label="Pagamento"
+              />
             </div>
           </div>
         </div>
