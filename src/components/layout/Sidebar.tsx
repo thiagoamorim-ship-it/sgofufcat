@@ -22,11 +22,11 @@ const menuItems = [
   { label: 'Retenções', icon: Calculator, path: '/retencoes' },
   { label: 'Calculadoras', icon: Calculator, path: '/calculadoras' },
   { label: 'Documentos', icon: FileText, path: '/documentos' },
-  {
-    label: 'Base de Conhecimento',
-    icon: Library,
-    path: '/legislacao',
-  },
+ {
+  label: 'Base de Conhecimento',
+  icon: BookOpen,
+  path: '/base-conhecimento',
+},
   { label: 'Guia Operacional', icon: ClipboardCheck, path: '/checklist' },
 ];
 
