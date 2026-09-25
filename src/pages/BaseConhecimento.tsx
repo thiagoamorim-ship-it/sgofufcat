@@ -61,6 +61,7 @@ const articles: Article[] = [
     category: 'Empenho',
     tags: ['Empenho', 'Ordinário', 'Estimativo', 'Global'],
     icon: FileText,
+    path: '/base-conhecimento/tipos-empenho',
   },
   {
     id: 'celula-orcamentaria',
