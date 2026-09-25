@@ -9,6 +9,7 @@ import Calculadoras from './pages/Calculadoras';
 import AcrescimoSupressao from './pages/AcrescimoSupressao';
 import BaseConhecimento from './pages/BaseConhecimento';
 import EstruturaOrcamentaria from './pages/EstruturaOrcamentaria';
+import BaseRetencoes from './pages/BaseRetencoes';
 import Checklist from './pages/Checklist';
 import DisponibilidadeOrcamentaria from './pages/DisponibilidadeOrcamentaria';
 import Empenho from './pages/Empenho';
@@ -37,6 +38,11 @@ export default function App() {
           <Route
             path="/base-conhecimento/estrutura-orcamentaria"
             element={<EstruturaOrcamentaria />}
+          />
+
+          <Route
+            path="/base-conhecimento/retencoes"
+            element={<BaseRetencoes />}
           />
 
           <Route path="/checklist" element={<Checklist />} />
