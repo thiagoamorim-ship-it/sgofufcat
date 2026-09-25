@@ -3,6 +3,7 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
+  FileSearch,
   FileText,
   Landmark,
   ReceiptText,
@@ -43,6 +44,16 @@ const categories: Category[] = [
 ];
 
 const articles: Article[] = [
+  {
+    id: 'classificador-orcamentario',
+    title: 'Classificador Orçamentário',
+    description:
+      'Pesquise a classificação da despesa a partir da descrição do item da nota fiscal.',
+    category: 'Orçamento e SIAFI',
+    tags: ['Classificação', 'NDD', 'ND', 'Nota Fiscal', 'SIAFI'],
+    icon: FileSearch,
+    path: '/base-conhecimento/classificador-orcamentario',
+  },
   {
     id: 'estrutura-orcamentaria',
     title: 'Estrutura Orçamentária',
