@@ -7,6 +7,7 @@ import Regularidade from './pages/Regularidade';
 import Retencoes from './pages/Retencoes';
 import Checklist from './pages/Checklist';
 import DisponibilidadeOrcamentaria from './pages/DisponibilidadeOrcamentaria';
+import Empenho from './pages/Empenho';
 
 export default function App() {
   return (
@@ -19,9 +20,15 @@ export default function App() {
           <Route path="/retencoes" element={<Retencoes />} />
 
           <Route path="/checklist" element={<Checklist />} />
+
           <Route
             path="/checklist/disponibilidade"
             element={<DisponibilidadeOrcamentaria />}
+          />
+
+          <Route
+            path="/checklist/empenho"
+            element={<Empenho />}
           />
 
           <Route path="*" element={<Navigate to="/" replace />} />
