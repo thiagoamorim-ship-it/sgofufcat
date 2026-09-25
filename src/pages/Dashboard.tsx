@@ -49,11 +49,12 @@ const tools = [
     path: '/legislacao',
   },
   {
-    title: 'Checklist',
-    description: 'Conferência e instrução dos processos.',
-    icon: FileCheck2,
-    path: '/checklist',
-  },
+  title: 'Guia Operacional',
+  description:
+    'Passo a passo das rotinas de disponibilidade, empenho, liquidação e pagamento.',
+  icon: FileCheck2,
+  path: '/checklist',
+},
 ];
 
 export default function Dashboard() {
