@@ -10,6 +10,7 @@ import AcrescimoSupressao from './pages/AcrescimoSupressao';
 import BaseConhecimento from './pages/BaseConhecimento';
 import EstruturaOrcamentaria from './pages/EstruturaOrcamentaria';
 import BaseRetencoes from './pages/BaseRetencoes';
+import TiposEmpenho from './pages/TiposEmpenho';
 import Checklist from './pages/Checklist';
 import DisponibilidadeOrcamentaria from './pages/DisponibilidadeOrcamentaria';
 import Empenho from './pages/Empenho';
@@ -43,6 +44,11 @@ export default function App() {
           <Route
             path="/base-conhecimento/retencoes"
             element={<BaseRetencoes />}
+          />
+
+          <Route
+            path="/base-conhecimento/tipos-empenho"
+            element={<TiposEmpenho />}
           />
 
           <Route path="/checklist" element={<Checklist />} />
