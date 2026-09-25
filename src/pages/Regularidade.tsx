@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import {
   AlertCircle,
   Building2,
+  Check,
+  Copy,
   ExternalLink,
   FileCheck2,
   Landmark,
@@ -105,6 +107,7 @@ export default function Regularidade() {
   const [cnpj, setCnpj] = useState('');
   const [searchedCnpj, setSearchedCnpj] = useState('');
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const valid = useMemo(() => isValidCNPJ(cnpj), [cnpj]);
 
@@ -116,7 +119,26 @@ export default function Regularidade() {
     }
 
     setError('');
+    setCopied(false);
     setSearchedCnpj(formatCNPJ(cnpj));
+  }
+
+  async function handleCopyCnpj() {
+    if (!searchedCnpj) return;
+
+    const cnpjNumbers = onlyNumbers(searchedCnpj);
+
+    try {
+      await navigator.clipboard.writeText(cnpjNumbers);
+
+      setCopied(true);
+
+      window.setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch {
+      setError('Não foi possível copiar o CNPJ automaticamente.');
+    }
   }
 
   return (
@@ -168,6 +190,7 @@ export default function Regularidade() {
                 setCnpj(onlyNumbers(event.target.value));
                 setError('');
                 setSearchedCnpj('');
+                setCopied(false);
               }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') {
@@ -200,21 +223,45 @@ export default function Regularidade() {
       {searchedCnpj && (
         <>
           <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
-            <div className="flex items-center gap-3">
-              <Building2
-                size={21}
-                className="text-blue-700"
-              />
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <Building2
+                  size={21}
+                  className="text-blue-700"
+                />
 
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
-                  Fornecedor em conferência
-                </p>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
+                    Fornecedor em conferência
+                  </p>
 
-                <p className="font-semibold text-slate-900">
-                  {searchedCnpj}
-                </p>
+                  <p className="font-semibold text-slate-900">
+                    {searchedCnpj}
+                  </p>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={handleCopyCnpj}
+                className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
+                  copied
+                    ? 'border-green-200 bg-green-50 text-green-700'
+                    : 'border-blue-200 bg-white text-blue-700 hover:border-blue-300 hover:bg-blue-50'
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <Check size={17} />
+                    CNPJ copiado
+                  </>
+                ) : (
+                  <>
+                    <Copy size={17} />
+                    Copiar CNPJ
+                  </>
+                )}
+              </button>
             </div>
           </section>
 
