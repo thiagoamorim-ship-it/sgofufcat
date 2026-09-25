@@ -4,8 +4,12 @@ import {
   Building2,
   CalendarDays,
   CheckCircle2,
+  Download,
+  ExternalLink,
   FileCode2,
+  FileText,
   Hash,
+  Loader2,
   Package,
   ReceiptText,
   UploadCloud,
@@ -66,16 +70,47 @@ function formatDate(value: string) {
   }).format(date);
 }
 
+function base64ToBlob(base64: string, type: string) {
+  const cleanBase64 = base64.includes(',')
+    ? base64.split(',').pop() || ''
+    : base64;
+
+  const binary = window.atob(cleanBase64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return new Blob([bytes], { type });
+}
+
 export default function NotasFiscais() {
   const [data, setData] = useState<NFeData | null>(null);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
+
+  const [danfeLoading, setDanfeLoading] = useState(false);
+  const [danfeError, setDanfeError] = useState('');
+  const [danfeUrl, setDanfeUrl] = useState('');
+  const [danfeFileName, setDanfeFileName] = useState('');
+
+  function clearDanfe() {
+    if (danfeUrl) {
+      URL.revokeObjectURL(danfeUrl);
+    }
+
+    setDanfeUrl('');
+    setDanfeFileName('');
+    setDanfeError('');
+  }
 
   async function processXML(file?: File) {
     if (!file) return;
 
     setError('');
     setData(null);
+    clearDanfe();
 
     if (!file.name.toLowerCase().endsWith('.xml')) {
       setError('Selecione um arquivo XML de NF-e.');
@@ -136,6 +171,79 @@ export default function NotasFiscais() {
     }
   }
 
+  async function gerarDanfe() {
+    if (!data?.chave) {
+      setDanfeError('A chave de acesso da NF-e não foi identificada.');
+      return;
+    }
+
+    const chave = data.chave.replace(/\D/g, '');
+
+    if (chave.length !== 44) {
+      setDanfeError(
+        'A chave de acesso identificada no XML não possui 44 dígitos.',
+      );
+      return;
+    }
+
+    setDanfeLoading(true);
+    setDanfeError('');
+
+    try {
+      const response = await fetch('/api/danfe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chave,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error || 'Não foi possível gerar o DANFE.',
+        );
+      }
+
+      if (!result?.pdf_base64) {
+        throw new Error(
+          'O serviço não retornou o DANFE em PDF.',
+        );
+      }
+
+      if (danfeUrl) {
+        URL.revokeObjectURL(danfeUrl);
+      }
+
+      const blob = base64ToBlob(
+        result.pdf_base64,
+        'application/pdf',
+      );
+
+      const url = URL.createObjectURL(blob);
+
+      const pdfName = data.numero
+        ? `DANFE-NFe-${data.numero}.pdf`
+        : `DANFE-${chave}.pdf`;
+
+      setDanfeUrl(url);
+      setDanfeFileName(pdfName);
+
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (requestError) {
+      setDanfeError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Não foi possível gerar o DANFE.',
+      );
+    } finally {
+      setDanfeLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section>
@@ -148,8 +256,8 @@ export default function NotasFiscais() {
         </h1>
 
         <p className="mt-2 text-slate-500">
-          Importe o XML da NF-e para visualizar e conferir os principais
-          dados fiscais.
+          Importe o XML da NF-e para visualizar, conferir os principais
+          dados fiscais e gerar o DANFE em PDF.
         </p>
       </section>
 
@@ -165,7 +273,8 @@ export default function NotasFiscais() {
             </h2>
 
             <p className="text-sm text-slate-500">
-              O arquivo é processado diretamente no navegador.
+              Os dados fiscais do XML são processados diretamente no
+              navegador.
             </p>
           </div>
         </div>
@@ -192,7 +301,9 @@ export default function NotasFiscais() {
             type="file"
             accept=".xml,text/xml,application/xml"
             className="hidden"
-            onChange={(event) => processXML(event.target.files?.[0])}
+            onChange={(event) =>
+              processXML(event.target.files?.[0])
+            }
           />
         </label>
 
@@ -207,7 +318,10 @@ export default function NotasFiscais() {
       {data && (
         <>
           <section className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-            <CheckCircle2 size={20} className="text-emerald-600" />
+            <CheckCircle2
+              size={20}
+              className="text-emerald-600"
+            />
 
             <div>
               <p className="text-sm font-semibold text-emerald-800">
@@ -224,7 +338,9 @@ export default function NotasFiscais() {
             <InfoCard
               icon={Hash}
               label="NF-e"
-              value={`${data.numero || '—'} / Série ${data.serie || '—'}`}
+              value={`${data.numero || '—'} / Série ${
+                data.serie || '—'
+              }`}
             />
 
             <InfoCard
@@ -250,7 +366,11 @@ export default function NotasFiscais() {
           <section className="grid gap-4 xl:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-4 flex items-center gap-2">
-                <Building2 size={19} className="text-blue-600" />
+                <Building2
+                  size={19}
+                  className="text-blue-600"
+                />
+
                 <h2 className="font-semibold text-slate-900">
                   Emitente
                 </h2>
@@ -267,7 +387,11 @@ export default function NotasFiscais() {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-4 flex items-center gap-2">
-                <Building2 size={19} className="text-blue-600" />
+                <Building2
+                  size={19}
+                  className="text-blue-600"
+                />
+
                 <h2 className="font-semibold text-slate-900">
                   Destinatário
                 </h2>
@@ -314,7 +438,10 @@ export default function NotasFiscais() {
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-start gap-3">
-              <FileCode2 size={20} className="mt-0.5 text-slate-400" />
+              <FileCode2
+                size={20}
+                className="mt-0.5 text-slate-400"
+              />
 
               <div className="min-w-0">
                 <p className="text-sm font-medium text-slate-700">
@@ -326,6 +453,94 @@ export default function NotasFiscais() {
                 </p>
               </div>
             </div>
+          </section>
+
+          <section className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-5 shadow-sm md:p-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                  <FileText size={22} />
+                </div>
+
+                <div>
+                  <h2 className="font-semibold text-slate-900">
+                    DANFE em PDF
+                  </h2>
+
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                    Gere o DANFE utilizando automaticamente a chave de
+                    acesso identificada no XML da NF-e.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={gerarDanfe}
+                  disabled={
+                    danfeLoading ||
+                    data.chave.replace(/\D/g, '').length !== 44
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {danfeLoading ? (
+                    <>
+                      <Loader2
+                        size={17}
+                        className="animate-spin"
+                      />
+                      Gerando DANFE...
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={17} />
+                      Gerar DANFE PDF
+                    </>
+                  )}
+                </button>
+
+                {danfeUrl && (
+                  <>
+                    <a
+                      href={danfeUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <ExternalLink size={17} />
+                      Visualizar
+                    </a>
+
+                    <a
+                      href={danfeUrl}
+                      download={danfeFileName}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <Download size={17} />
+                      Baixar PDF
+                    </a>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {danfeError && (
+              <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <AlertCircle
+                  size={18}
+                  className="mt-0.5 shrink-0"
+                />
+                {danfeError}
+              </div>
+            )}
+
+            {danfeUrl && (
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                <CheckCircle2 size={18} />
+                DANFE gerado com sucesso.
+              </div>
+            )}
           </section>
         </>
       )}
@@ -380,7 +595,9 @@ function FinancialItem({
 }) {
   return (
     <div className="rounded-xl bg-slate-50 p-4">
-      <p className="text-sm text-slate-500">{label}</p>
+      <p className="text-sm text-slate-500">
+        {label}
+      </p>
 
       <p
         className={`mt-1 ${
