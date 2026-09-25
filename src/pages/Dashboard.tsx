@@ -2,7 +2,6 @@ import {
   Calculator,
   FileCheck2,
   FileText,
-  Landmark,
   Library,
   ReceiptText,
   Search,
@@ -10,10 +9,12 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+import { Link } from 'react-router-dom';
+
 const tools = [
   {
     title: 'Notas Fiscais',
-    description: 'Consulte NF-e, importe XML e gere DANFE.',
+    description: 'Consulte NF-e, importe XML e confira dados fiscais.',
     icon: ReceiptText,
     path: '/notas-fiscais',
   },
@@ -21,7 +22,7 @@ const tools = [
     title: 'Regularidade',
     description: 'Consulte certidões e situação de fornecedores.',
     icon: ShieldCheck,
-    path: '/certidoes',
+    path: '/regularidade',
   },
   {
     title: 'Retenções',
@@ -37,15 +38,9 @@ const tools = [
   },
   {
     title: 'Documentos',
-    description: 'Gere relatórios, análises e documentos em PDF.',
+    description: 'Gere relatórios, análises e documentos.',
     icon: FileText,
     path: '/documentos',
-  },
-  {
-    title: 'SIAFI',
-    description: 'Rotinas, códigos e consultas de apoio.',
-    icon: Landmark,
-    path: '/siafi',
   },
   {
     title: 'Base de Conhecimento',
@@ -65,6 +60,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
 
+      {/* Cabeçalho */}
       <section>
         <p className="text-sm font-medium text-blue-600">
           Visão geral
@@ -80,6 +76,7 @@ export default function Dashboard() {
         </p>
       </section>
 
+      {/* Pesquisa */}
       <div className="relative">
         <Search
           size={20}
@@ -93,19 +90,16 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Ferramentas */}
       <section>
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-slate-900">
+            Ferramentas
+          </h2>
 
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">
-              Ferramentas
-            </h2>
-
-            <p className="text-sm text-slate-500">
-              Acesse rapidamente suas principais rotinas.
-            </p>
-          </div>
-
+          <p className="text-sm text-slate-500">
+            Acesse rapidamente suas principais rotinas.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -114,9 +108,10 @@ export default function Dashboard() {
             const Icon = tool.icon;
 
             return (
-              <button
+              <Link
                 key={tool.title}
-                className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-md"
+                to={tool.path}
+                className="group block rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-md"
               >
                 <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700 transition group-hover:bg-blue-600 group-hover:text-white">
                   <Icon size={22} />
@@ -129,7 +124,7 @@ export default function Dashboard() {
                 <p className="mt-1 text-sm leading-5 text-slate-500">
                   {tool.description}
                 </p>
-              </button>
+              </Link>
             );
           })}
 
