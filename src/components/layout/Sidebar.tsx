@@ -4,13 +4,13 @@ import {
   ShieldCheck,
   Calculator,
   FileText,
-  Landmark,
   Library,
   ClipboardCheck,
   Settings,
   FileSignature,
   FolderOpen,
   ExternalLink,
+  Landmark,
 } from 'lucide-react';
 
 const menuItems = [
@@ -20,12 +20,16 @@ const menuItems = [
   { label: 'Retenções', icon: Calculator },
   { label: 'Calculadoras', icon: Calculator },
   { label: 'Documentos', icon: FileText },
-  { label: 'SIAFI', icon: Landmark },
   { label: 'Base de Conhecimento', icon: Library },
   { label: 'Checklist', icon: ClipboardCheck },
 ];
 
 const quickLinks = [
+  {
+    label: 'SIAFI',
+    icon: Landmark,
+    url: 'https://siafi.tesouro.gov.br',
+  },
   {
     label: 'Contratos.gov.br',
     icon: FileSignature,
@@ -41,7 +45,7 @@ const quickLinks = [
 export default function Sidebar() {
   return (
     <aside className="hidden min-h-screen w-64 flex-col border-r border-slate-200 bg-white lg:flex">
-      
+
       {/* Identidade do sistema */}
       <div className="flex h-20 items-center gap-3 border-b border-slate-100 px-5">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#002B49] text-sm font-bold text-white">
@@ -56,7 +60,7 @@ export default function Sidebar() {
 
       {/* Navegação */}
       <nav className="flex-1 overflow-y-auto p-3">
-        
+
         <p className="px-3 pb-2 pt-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
           Gestão
         </p>
