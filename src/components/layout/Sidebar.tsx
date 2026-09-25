@@ -13,15 +13,21 @@ import {
   Landmark,
 } from 'lucide-react';
 
+import { NavLink } from 'react-router-dom';
+
 const menuItems = [
-  { label: 'Visão Geral', icon: LayoutDashboard },
-  { label: 'Notas Fiscais', icon: ReceiptText },
-  { label: 'Regularidade', icon: ShieldCheck },
-  { label: 'Retenções', icon: Calculator },
-  { label: 'Calculadoras', icon: Calculator },
-  { label: 'Documentos', icon: FileText },
-  { label: 'Base de Conhecimento', icon: Library },
-  { label: 'Checklist', icon: ClipboardCheck },
+  { label: 'Visão Geral', icon: LayoutDashboard, path: '/' },
+  { label: 'Notas Fiscais', icon: ReceiptText, path: '/notas-fiscais' },
+  { label: 'Regularidade', icon: ShieldCheck, path: '/regularidade' },
+  { label: 'Retenções', icon: Calculator, path: '/retencoes' },
+  { label: 'Calculadoras', icon: Calculator, path: '/calculadoras' },
+  { label: 'Documentos', icon: FileText, path: '/documentos' },
+  {
+    label: 'Base de Conhecimento',
+    icon: Library,
+    path: '/legislacao',
+  },
+  { label: 'Checklist', icon: ClipboardCheck, path: '/checklist' },
 ];
 
 const quickLinks = [
@@ -66,21 +72,25 @@ export default function Sidebar() {
         </p>
 
         <div className="space-y-1">
-          {menuItems.map((item, index) => {
+          {menuItems.map((item) => {
             const Icon = item.icon;
 
             return (
-              <button
+              <NavLink
                 key={item.label}
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
-                  index === 0
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+                to={item.path}
+                end={item.path === '/'}
+                className={({ isActive }) =>
+                  `flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`
+                }
               >
                 <Icon size={19} />
                 <span>{item.label}</span>
-              </button>
+              </NavLink>
             );
           })}
         </div>
