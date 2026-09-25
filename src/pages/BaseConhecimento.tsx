@@ -102,10 +102,21 @@ const articles: Article[] = [
     id: 'retencoes',
     title: 'Retenções Tributárias',
     description:
-      'Referências e orientações para apoio à análise das retenções incidentes nos pagamentos.',
+      'Referência sobre retenções relacionadas à aquisição de bens, insumos e prestação de serviços, com acesso ao SIRT para análise operacional.',
     category: 'Retenções',
-    tags: ['Tributos', 'IR', 'INSS', 'ISS'],
+    tags: [
+      'Tributos',
+      'IR',
+      'CSLL',
+      'Cofins',
+      'PIS/Pasep',
+      'Bens',
+      'Insumos',
+      'Serviços',
+      'SIRT',
+    ],
     icon: ReceiptText,
+    path: '/base-conhecimento/retencoes',
   },
   {
     id: 'legislacao',
@@ -188,7 +199,7 @@ export default function BaseConhecimento() {
                 type="search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Ex.: empenho, SICAF, PTRES, liquidação..."
+                placeholder="Ex.: empenho, SICAF, PTRES, retenções..."
                 className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100/50"
               />
             </div>
