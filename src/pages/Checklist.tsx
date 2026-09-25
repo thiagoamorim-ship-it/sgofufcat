@@ -35,14 +35,15 @@ const guides: Guide[] = [
     path: '/checklist/disponibilidade',
   },
   {
-    id: 'empenho',
-    number: '02',
-    title: 'Empenho',
-    description:
-      'Conferências prévias, minuta, célula orçamentária e emissão do empenho.',
-    icon: FileSignature,
-    available: true,
-    detail: 'POP disponível',
+  id: 'empenho',
+  number: '02',
+  title: 'Empenho',
+  description:
+    'Conferências prévias, minuta, célula orçamentária e emissão do empenho.',
+  icon: FileSignature,
+  available: true,
+  detail: 'POP disponível',
+  path: '/checklist/empenho',
   },
   {
     id: 'liquidacao',
