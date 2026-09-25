@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   WalletCards,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 type Category =
   | 'Todos'
@@ -28,6 +29,7 @@ type Article = {
   category: Exclude<Category, 'Todos'>;
   tags: string[];
   icon: typeof BookOpen;
+  path?: string;
 };
 
 const categories: Category[] = [
@@ -49,6 +51,7 @@ const articles: Article[] = [
     category: 'Orçamento e SIAFI',
     tags: ['SIAFI', 'PTRES', 'Fonte', 'ND', 'PI'],
     icon: Landmark,
+    path: '/base-conhecimento/estrutura-orcamentaria',
   },
   {
     id: 'tipos-empenho',
@@ -278,10 +281,19 @@ export default function BaseConhecimento() {
                       </div>
 
                       <div className="mt-5 border-t border-slate-100 pt-4">
-                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-400">
-                          Ler conteúdo
-                          <ArrowRight size={15} />
-                        </span>
+                        {article.path ? (
+                          <Link
+                            to={article.path}
+                            className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 transition hover:text-blue-800"
+                          >
+                            Ler conteúdo
+                            <ArrowRight size={15} />
+                          </Link>
+                        ) : (
+                          <span className="text-sm font-medium text-slate-400">
+                            Em preparação
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
