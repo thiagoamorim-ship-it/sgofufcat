@@ -11,6 +11,7 @@ import BaseConhecimento from './pages/BaseConhecimento';
 import EstruturaOrcamentaria from './pages/EstruturaOrcamentaria';
 import BaseRetencoes from './pages/BaseRetencoes';
 import TiposEmpenho from './pages/TiposEmpenho';
+import ClassificadorOrcamentario from './pages/ClassificadorOrcamentario';
 import Checklist from './pages/Checklist';
 import DisponibilidadeOrcamentaria from './pages/DisponibilidadeOrcamentaria';
 import Empenho from './pages/Empenho';
@@ -49,6 +50,11 @@ export default function App() {
           <Route
             path="/base-conhecimento/tipos-empenho"
             element={<TiposEmpenho />}
+          />
+
+          <Route
+            path="/base-conhecimento/classificador-orcamentario"
+            element={<ClassificadorOrcamentario />}
           />
 
           <Route path="/checklist" element={<Checklist />} />
