@@ -1,145 +1,20 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SGOFUFCAT - Superintendência de Gestão Orçamentária e Financeira</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-slate-100 font-sans text-slate-800 min-h-screen">
-  <header class="bg-[#002B49] text-white py-4 px-6 shadow-md border-b-4 border-yellow-500">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
-      <div class="flex items-center gap-3">
-        <div class="bg-white/10 p-2.5 rounded-xl border border-white/20">
-          <i class="fa-solid fa-building-columns text-2xl text-yellow-400"></i>
-        </div>
-        <div>
-          <h1 class="text-xl font-bold tracking-wide flex items-center gap-2 text-white">
-            UFCAT <span class="text-yellow-400">|</span> SGOFUFCAT
-          </h1>
-          <p class="text-xs text-blue-200">
-            Superintendência de Gestão Orçamentária e Financeira • Universidade Federal de Catalão
-          </p>
-        </div>
-      </div>
-      <div>
-        <span class="text-xs bg-emerald-600/90 border border-emerald-400/40 px-3 py-1.5 rounded-full text-emerald-100 font-mono flex items-center gap-2 shadow-sm">
-          <span class="h-2 w-2 rounded-full bg-emerald-300 animate-pulse"></span>
-          Sistema On-line Ativo • Sem Limites
-        </span>
-      </div>
-    </div>
-  </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-    <div class="flex flex-wrap bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm gap-1">
-      <button onclick="switchTab('checklist')" id="tab-checklist" class="tab-btn flex-1 min-w-[200px] flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl text-sm font-semibold transition-all bg-[#002B49] text-white shadow-sm">
-        <i class="fa-solid fa-list-check"></i> Checklist & Parametrização
-      </button>
-      <button onclick="switchTab('danfe')" id="tab-danfe" class="tab-btn flex-1 min-w-[200px] flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl text-sm font-semibold transition-all text-slate-600 hover:bg-slate-100">
-        <i class="fa-solid fa-file-invoice"></i> Consulta DANFE (NF-e)
-      </button>
-      <button onclick="switchTab('certidoes')" id="tab-certidoes" class="tab-btn flex-1 min-w-[200px] flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl text-sm font-semibold transition-all text-slate-600 hover:bg-slate-100">
-        <i class="fa-solid fa-shield-halved"></i> Certidões de Regularidade
-      </button>
-    </div>
+    <meta
+      name="description"
+      content="SGO - Sistema de apoio à Gestão Orçamentária e Financeira do HU-UFCAT"
+    />
 
-    <div id="content-checklist" class="tab-content bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-      <div class="border-b pb-4">
-        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <i class="fa-solid fa-list-check text-blue-600"></i> Parametrização do Checklist de Liquidação
-        </h2>
-        <p class="text-xs text-slate-500 mt-1">Gestão e carregamento de imagens de instrução para conferência de processos administrativos.</p>
-      </div>
-      <div class="border-2 border-dashed border-blue-200 hover:border-blue-400 p-10 rounded-2xl text-center bg-blue-50/50 hover:bg-blue-50 cursor-pointer transition-all">
-        <i class="fa-solid fa-cloud-arrow-up text-4xl text-blue-500 mb-3"></i>
-        <p class="text-sm font-semibold text-slate-700">Carregar imagem de instrução do checklist</p>
-        <p class="text-xs text-slate-400 mt-1">Arraste a imagem ou clique para selecionar (PNG, JPG, WEBP)</p>
-      </div>
-    </div>
+    <title>SGO | HU-UFCAT</title>
+  </head>
 
-    <div id="content-danfe" class="tab-content hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-      <div class="border-b pb-4">
-        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <i class="fa-solid fa-file-invoice text-blue-600"></i> Consulta e Visualizador DANFE (NF-e)
-        </h2>
-        <p class="text-xs text-slate-500 mt-1">Introduza a chave de acesso da NF-e para consultar e gerar o documento DANFE.</p>
-      </div>
-      <div class="flex flex-col sm:flex-row gap-3 max-w-2xl">
-        <input type="text" maxlength="44" placeholder="Insira os 44 dígitos da chave de acesso NF-e..." class="flex-1 px-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono" />
-        <button class="bg-[#002B49] hover:bg-blue-900 text-white px-6 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-sm">
-          <i class="fa-solid fa-magnifying-glass"></i> Consultar DANFE
-        </button>
-      </div>
-    </div>
+  <body>
+    <div id="root"></div>
 
-    <div id="content-certidoes" class="tab-content hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-      <div class="border-b pb-4">
-        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <i class="fa-solid fa-shield-halved text-blue-600"></i> Central de Emissão de Certidões de Regularidade
-        </h2>
-        <p class="text-xs text-slate-500 mt-1">Consulta e download automatizado de certidões fiscais e laborais por CNPJ.</p>
-      </div>
-      <div class="flex flex-col sm:flex-row gap-3 max-w-md">
-        <input type="text" placeholder="00.000.000/0001-00" class="flex-1 px-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono" />
-        <button class="bg-[#002B49] hover:bg-blue-900 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-sm">
-          Consultar CNPJ
-        </button>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-        <div class="p-4 border border-slate-200 rounded-xl flex justify-between items-center bg-slate-50 hover:bg-white transition-all shadow-sm">
-          <div>
-            <h3 class="font-semibold text-sm text-slate-800">Certidão Conjunta PGFN / Receita Federal</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Débitos relativos a Tributos Federais e à Dívida Ativa da União</p>
-          </div>
-          <button class="bg-white border border-slate-300 p-2.5 rounded-lg hover:bg-slate-100 text-slate-700 transition-all">
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-        <div class="p-4 border border-slate-200 rounded-xl flex justify-between items-center bg-slate-50 hover:bg-white transition-all shadow-sm">
-          <div>
-            <h3 class="font-semibold text-sm text-slate-800">CRF - FGTS (Caixa Econômica Federal)</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Certificado de Regularidade do FGTS</p>
-          </div>
-          <button class="bg-white border border-slate-300 p-2.5 rounded-lg hover:bg-slate-100 text-slate-700 transition-all">
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-        <div class="p-4 border border-slate-200 rounded-xl flex justify-between items-center bg-slate-50 hover:bg-white transition-all shadow-sm">
-          <div>
-            <h3 class="font-semibold text-sm text-slate-800">CNDT - Certidão de Débitos Trabalhistas</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Justiça do Trabalho / TST</p>
-          </div>
-          <button class="bg-white border border-slate-300 p-2.5 rounded-lg hover:bg-slate-100 text-slate-700 transition-all">
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-        <div class="p-4 border border-slate-200 rounded-xl flex justify-between items-center bg-slate-50 hover:bg-white transition-all shadow-sm">
-          <div>
-            <h3 class="font-semibold text-sm text-slate-800">Consulta CADIN - Setor Público</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Cadastro Informativo de Créditos não Quitados</p>
-          </div>
-          <button class="bg-white border border-slate-300 p-2.5 rounded-lg hover:bg-slate-100 text-slate-700 transition-all">
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <script>
-    function switchTab(tab) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('bg-[#002B49]', 'text-white', 'shadow-sm');
-        btn.classList.add('text-slate-600', 'hover:bg-slate-100');
-      });
-      document.getElementById('content-' + tab).classList.remove('hidden');
-      const activeBtn = document.getElementById('tab-' + tab);
-      activeBtn.classList.add('bg-[#002B49]', 'text-white', 'shadow-sm');
-      activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-100');
-    }
-  </script>
-</body>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
