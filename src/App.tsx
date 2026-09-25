@@ -7,6 +7,7 @@ import Regularidade from './pages/Regularidade';
 import Retencoes from './pages/Retencoes';
 import Calculadoras from './pages/Calculadoras';
 import AcrescimoSupressao from './pages/AcrescimoSupressao';
+import BaseConhecimento from './pages/BaseConhecimento';
 import Checklist from './pages/Checklist';
 import DisponibilidadeOrcamentaria from './pages/DisponibilidadeOrcamentaria';
 import Empenho from './pages/Empenho';
@@ -25,6 +26,11 @@ export default function App() {
           <Route
             path="/calculadoras/acrescimo-supressao"
             element={<AcrescimoSupressao />}
+          />
+
+          <Route
+            path="/base-conhecimento"
+            element={<BaseConhecimento />}
           />
 
           <Route path="/checklist" element={<Checklist />} />
