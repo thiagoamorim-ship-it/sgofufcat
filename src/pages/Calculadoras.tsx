@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Scale,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const calculators = [
   {
@@ -17,6 +18,7 @@ const calculators = [
       'Calcule o percentual de alteração e o novo valor do contrato.',
     icon: Percent,
     available: true,
+    path: '/calculadoras/acrescimo-supressao',
   },
   {
     id: 'reajuste',
@@ -24,7 +26,7 @@ const calculators = [
     description:
       'Calcule reajustes por percentual ou variação de índice.',
     icon: RefreshCw,
-    available: true,
+    available: false,
   },
   {
     id: 'rateio',
@@ -32,7 +34,7 @@ const calculators = [
     description:
       'Distribua um valor entre itens, fontes ou centros de custo.',
     icon: Scale,
-    available: true,
+    available: false,
   },
   {
     id: 'saldo-empenho',
@@ -40,7 +42,7 @@ const calculators = [
     description:
       'Calcule saldos a liquidar e a pagar a partir da execução da despesa.',
     icon: CircleDollarSign,
-    available: true,
+    available: false,
   },
   {
     id: 'execucao',
@@ -48,7 +50,7 @@ const calculators = [
     description:
       'Calcule os percentuais de empenho, liquidação e pagamento.',
     icon: ChartNoAxesColumnIncreasing,
-    available: true,
+    available: false,
   },
   {
     id: 'prazos',
@@ -56,7 +58,7 @@ const calculators = [
     description:
       'Calcule intervalos entre datas e projeções de vencimento.',
     icon: CalendarDays,
-    available: true,
+    available: false,
   },
 ];
 
@@ -101,7 +103,7 @@ export default function Calculadoras() {
       <section>
         <div className="mb-5">
           <h2 className="text-lg font-semibold text-slate-900">
-            Ferramentas disponíveis
+            Ferramentas
           </h2>
 
           <p className="text-sm text-slate-500">
@@ -113,18 +115,29 @@ export default function Calculadoras() {
           {calculators.map((calculator) => {
             const Icon = calculator.icon;
 
-            return (
-              <div
-                key={calculator.id}
-                className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700 transition group-hover:bg-blue-600 group-hover:text-white">
+            const content = (
+              <>
+                <div className="flex items-start justify-between gap-3">
+                  <div
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+                      calculator.available
+                        ? 'bg-blue-50 text-blue-700 transition group-hover:bg-blue-600 group-hover:text-white'
+                        : 'bg-slate-100 text-slate-400'
+                    }`}
+                  >
                     <Icon size={21} />
                   </div>
 
-                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                    Disponível
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      calculator.available
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {calculator.available
+                      ? 'Disponível'
+                      : 'Em breve'}
                   </span>
                 </div>
 
@@ -137,15 +150,41 @@ export default function Calculadoras() {
                 </p>
 
                 <div className="mt-5 border-t border-slate-100 pt-4">
-                  <span className="flex items-center gap-1 text-sm font-semibold text-blue-700">
-                    Abrir calculadora
-
-                    <ArrowRight
-                      size={16}
-                      className="transition group-hover:translate-x-1"
-                    />
-                  </span>
+                  {calculator.available ? (
+                    <span className="flex items-center gap-1 text-sm font-semibold text-blue-700">
+                      Abrir calculadora
+                      <ArrowRight
+                        size={16}
+                        className="transition group-hover:translate-x-1"
+                      />
+                    </span>
+                  ) : (
+                    <span className="text-sm font-medium text-slate-400">
+                      Em desenvolvimento
+                    </span>
+                  )}
                 </div>
+              </>
+            );
+
+            if (calculator.available && calculator.path) {
+              return (
+                <Link
+                  key={calculator.id}
+                  to={calculator.path}
+                  className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+                >
+                  {content}
+                </Link>
+              );
+            }
+
+            return (
+              <div
+                key={calculator.id}
+                className="rounded-2xl border border-slate-200 bg-white p-5 opacity-75 shadow-sm"
+              >
+                {content}
               </div>
             );
           })}
@@ -154,7 +193,7 @@ export default function Calculadoras() {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="font-semibold text-slate-900">
-          Como funcionará
+          Como funciona
         </h2>
 
         <div className="mt-4 grid gap-4 md:grid-cols-3">
@@ -167,13 +206,13 @@ export default function Calculadoras() {
           <Feature
             number="02"
             title="Resultado automático"
-            description="O SGOF realizará o cálculo diretamente no navegador."
+            description="O SGOF realiza o cálculo diretamente no navegador."
           />
 
           <Feature
             number="03"
             title="Demonstrativo"
-            description="Veja a memória resumida do cálculo e o resultado final."
+            description="Confira a memória resumida do cálculo e o resultado final."
           />
         </div>
       </section>
