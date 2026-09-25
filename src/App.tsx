@@ -4,6 +4,7 @@ import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
 import NotasFiscais from './pages/NotasFiscais';
 import Regularidade from './pages/Regularidade';
+import Retencoes from './pages/Retencoes';
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/notas-fiscais" element={<NotasFiscais />} />
           <Route path="/regularidade" element={<Regularidade />} />
+          <Route path="/retencoes" element={<Retencoes />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
