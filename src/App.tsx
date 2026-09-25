@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import NotasFiscais from './pages/NotasFiscais';
 import Regularidade from './pages/Regularidade';
 import Retencoes from './pages/Retencoes';
+import Calculadoras from './pages/Calculadoras';
 import Checklist from './pages/Checklist';
 import DisponibilidadeOrcamentaria from './pages/DisponibilidadeOrcamentaria';
 import Empenho from './pages/Empenho';
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/notas-fiscais" element={<NotasFiscais />} />
           <Route path="/regularidade" element={<Regularidade />} />
           <Route path="/retencoes" element={<Retencoes />} />
+          <Route path="/calculadoras" element={<Calculadoras />} />
 
           <Route path="/checklist" element={<Checklist />} />
 
