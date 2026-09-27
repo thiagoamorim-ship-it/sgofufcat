@@ -12,6 +12,7 @@ import { supabase } from './lib/supabase';
 import AppLayout from './components/layout/AppLayout';
 
 import Login from './pages/Login';
+import RedefinirSenha from './pages/RedefinirSenha';
 import Dashboard from './pages/Dashboard';
 import NotasFiscais from './pages/NotasFiscais';
 import Regularidade from './pages/Regularidade';
@@ -73,12 +74,14 @@ export default function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      if (mounted) {
-        setSession(currentSession);
-        setLoading(false);
-      }
-    });
+    } = supabase.auth.onAuthStateChange(
+      (_event, currentSession) => {
+        if (mounted) {
+          setSession(currentSession);
+          setLoading(false);
+        }
+      },
+    );
 
     return () => {
       mounted = false;
@@ -93,6 +96,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+
+        {/* Rotas públicas */}
         <Route
           path="/login"
           element={
@@ -104,6 +109,12 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/redefinir-senha"
+          element={<RedefinirSenha />}
+        />
+
+        {/* Área protegida */}
         <Route
           path="/*"
           element={
