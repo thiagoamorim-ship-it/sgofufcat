@@ -258,7 +258,7 @@ export default function Dashboard() {
           </p>
 
           <p className="text-sm font-semibold text-slate-700">
-            Thiago Batista Amorim
+            Thiago Batista Amorim | Analista Administrativo | SGOF | HU-UFCat
           </p>
         </div>
       </section>
