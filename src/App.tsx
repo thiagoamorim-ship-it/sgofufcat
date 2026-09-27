@@ -8,6 +8,10 @@ import {
 } from 'react-router-dom';
 
 import { supabase } from './lib/supabase';
+import {
+  buscarPerfilUsuario,
+  type UsuarioPerfil,
+} from './lib/auth';
 
 import AppLayout from './components/layout/AppLayout';
 
@@ -52,22 +56,79 @@ function LoadingScreen() {
   );
 }
 
+function UsuarioBloqueado() {
+  async function sair() {
+    await supabase.auth.signOut();
+    window.location.href = '/login';
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-5">
+      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#002B49] text-sm font-bold text-white">
+          SGO
+        </div>
+
+        <h1 className="mt-5 text-xl font-bold text-slate-900">
+          Acesso indisponível
+        </h1>
+
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Seu usuário não possui acesso ativo ao SGOF.
+          Entre em contato com o administrador do sistema.
+        </p>
+
+        <button
+          type="button"
+          onClick={sair}
+          className="mt-6 w-full rounded-xl bg-[#002B49] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#003d66]"
+        >
+          Voltar ao login
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
+  const [perfil, setPerfil] = useState<UsuarioPerfil | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
+
+    async function carregarAcesso(
+      currentSession: Session | null,
+    ) {
+      if (!mounted) return;
+
+      setSession(currentSession);
+
+      if (!currentSession?.user) {
+        setPerfil(null);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      const perfilUsuario = await buscarPerfilUsuario(
+        currentSession.user.id,
+      );
+
+      if (!mounted) return;
+
+      setPerfil(perfilUsuario);
+      setLoading(false);
+    }
 
     async function loadSession() {
       const {
         data: { session: currentSession },
       } = await supabase.auth.getSession();
 
-      if (mounted) {
-        setSession(currentSession);
-        setLoading(false);
-      }
+      await carregarAcesso(currentSession);
     }
 
     loadSession();
@@ -76,10 +137,7 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
       (_event, currentSession) => {
-        if (mounted) {
-          setSession(currentSession);
-          setLoading(false);
-        }
+        void carregarAcesso(currentSession);
       },
     );
 
@@ -93,10 +151,13 @@ export default function App() {
     return <LoadingScreen />;
   }
 
+  if (session && (!perfil || !perfil.ativo)) {
+    return <UsuarioBloqueado />;
+  }
+
   return (
     <BrowserRouter>
       <Routes>
-
         {/* Rotas públicas */}
         <Route
           path="/login"
@@ -118,7 +179,7 @@ export default function App() {
         <Route
           path="/*"
           element={
-            session ? (
+            session && perfil ? (
               <AppLayout>
                 <Routes>
                   <Route
