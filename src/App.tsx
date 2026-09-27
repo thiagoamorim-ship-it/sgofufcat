@@ -10,6 +10,7 @@ import {
 import { supabase } from './lib/supabase';
 import {
   buscarPerfilUsuario,
+  usuarioEhAdministrador,
   type UsuarioPerfil,
 } from './lib/auth';
 
@@ -31,6 +32,7 @@ import ClassificadorOrcamentario from './pages/ClassificadorOrcamentario';
 import Checklist from './pages/Checklist';
 import DisponibilidadeOrcamentaria from './pages/DisponibilidadeOrcamentaria';
 import Empenho from './pages/Empenho';
+import Usuarios from './pages/Usuarios';
 
 function LoadingScreen() {
   return (
@@ -155,6 +157,9 @@ export default function App() {
     return <UsuarioBloqueado />;
   }
 
+  const administrador =
+    usuarioEhAdministrador(perfil);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -175,7 +180,7 @@ export default function App() {
           element={<RedefinirSenha />}
         />
 
-        {/* Área protegida */}
+        {/* Área autenticada */}
         <Route
           path="/*"
           element={
@@ -250,6 +255,18 @@ export default function App() {
                   <Route
                     path="/checklist/empenho"
                     element={<Empenho />}
+                  />
+
+                  {/* Administração */}
+                  <Route
+                    path="/administracao/usuarios"
+                    element={
+                      administrador ? (
+                        <Usuarios />
+                      ) : (
+                        <Navigate to="/" replace />
+                      )
+                    }
                   />
 
                   <Route
