@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   BookOpen,
   LayoutDashboard,
@@ -5,30 +6,65 @@ import {
   ShieldCheck,
   Calculator,
   FileText,
-  Library,
   ClipboardCheck,
   Settings,
   FileSignature,
   FolderOpen,
   ExternalLink,
   Landmark,
+  Users,
 } from 'lucide-react';
 
 import { useLocation } from 'react-router-dom';
 
+import { supabase } from '../../lib/supabase';
+import {
+  buscarPerfilUsuario,
+  usuarioEhAdministrador,
+  type UsuarioPerfil,
+} from '../../lib/auth';
+
 const menuItems = [
-  { label: 'Visão Geral', icon: LayoutDashboard, path: '/' },
-  { label: 'Notas Fiscais', icon: ReceiptText, path: '/notas-fiscais' },
-  { label: 'Regularidade', icon: ShieldCheck, path: '/regularidade' },
-  { label: 'Retenções', icon: Calculator, path: '/retencoes' },
-  { label: 'Calculadoras', icon: Calculator, path: '/calculadoras' },
-  { label: 'Documentos', icon: FileText, path: '/documentos' },
- {
-  label: 'Base de Conhecimento',
-  icon: BookOpen,
-  path: '/base-conhecimento',
-},
-  { label: 'Guia Operacional', icon: ClipboardCheck, path: '/checklist' },
+  {
+    label: 'Visão Geral',
+    icon: LayoutDashboard,
+    path: '/',
+  },
+  {
+    label: 'Notas Fiscais',
+    icon: ReceiptText,
+    path: '/notas-fiscais',
+  },
+  {
+    label: 'Regularidade',
+    icon: ShieldCheck,
+    path: '/regularidade',
+  },
+  {
+    label: 'Retenções',
+    icon: Calculator,
+    path: '/retencoes',
+  },
+  {
+    label: 'Calculadoras',
+    icon: Calculator,
+    path: '/calculadoras',
+  },
+  {
+    label: 'Documentos',
+    icon: FileText,
+    path: '/documentos',
+  },
+  {
+    label: 'Base de Conhecimento',
+    icon: BookOpen,
+    path: '/base-conhecimento',
+  },
+  {
+    label: 'Guia Operacional',
+    icon: ClipboardCheck,
+    path: '/checklist',
+  },
 ];
 
 const quickLinks = [
@@ -51,6 +87,39 @@ const quickLinks = [
 
 export default function Sidebar() {
   const location = useLocation();
+
+  const [perfil, setPerfil] =
+    useState<UsuarioPerfil | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function carregarPerfil() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || !mounted) {
+        return;
+      }
+
+      const perfilUsuario =
+        await buscarPerfilUsuario(user.id);
+
+      if (mounted) {
+        setPerfil(perfilUsuario);
+      }
+    }
+
+    void carregarPerfil();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const administrador =
+    usuarioEhAdministrador(perfil);
 
   return (
     <aside className="hidden min-h-screen w-64 flex-col border-r border-slate-200 bg-white lg:flex">
@@ -86,7 +155,9 @@ export default function Sidebar() {
             const isActive =
               item.path === '/'
                 ? location.pathname === '/'
-                : location.pathname.startsWith(item.path);
+                : location.pathname.startsWith(
+                    item.path,
+                  );
 
             return (
               <a
@@ -107,6 +178,34 @@ export default function Sidebar() {
             );
           })}
         </div>
+
+        {/* Administração */}
+        {administrador && (
+          <div className="mt-6 border-t border-slate-100 pt-5">
+            <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Administração
+            </p>
+
+            <div className="space-y-1">
+              <a
+                href="/administracao/usuarios"
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+                  location.pathname.startsWith(
+                    '/administracao/usuarios',
+                  )
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <Users size={19} />
+
+                <span>
+                  Usuários
+                </span>
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Acesso rápido */}
         <div className="mt-6 border-t border-slate-100 pt-5">
@@ -141,19 +240,19 @@ export default function Sidebar() {
               );
             })}
           </div>
-
         </div>
 
       </nav>
 
       {/* Configurações */}
       <div className="border-t border-slate-100 p-3">
-
-        <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+        >
           <Settings size={19} />
           Configurações
         </button>
-
       </div>
 
     </aside>
