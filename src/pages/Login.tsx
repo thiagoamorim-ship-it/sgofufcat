@@ -1,12 +1,15 @@
 import { FormEvent, useState } from 'react';
 import {
   AlertCircle,
+  CheckCircle2,
   Eye,
   EyeOff,
+  KeyRound,
   Loader2,
   LockKeyhole,
   Mail,
   ShieldCheck,
+  X,
 } from 'lucide-react';
 
 import { supabase } from '../lib/supabase';
@@ -17,6 +20,12 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoveryError, setRecoveryError] = useState('');
+  const [recoverySent, setRecoverySent] = useState(false);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,6 +62,64 @@ export default function Login() {
     }
   }
 
+  function openRecovery() {
+    setRecoveryEmail(email.trim());
+    setRecoveryError('');
+    setRecoverySent(false);
+    setRecoveryOpen(true);
+  }
+
+  function closeRecovery() {
+    if (recoveryLoading) return;
+
+    setRecoveryOpen(false);
+    setRecoveryError('');
+    setRecoverySent(false);
+  }
+
+  async function handleRecovery(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    const recoveryAddress = recoveryEmail.trim();
+
+    if (!recoveryAddress) {
+      setRecoveryError('Informe seu e-mail.');
+      return;
+    }
+
+    setRecoveryLoading(true);
+    setRecoveryError('');
+
+    try {
+      const redirectTo = `${window.location.origin}/redefinir-senha`;
+
+      const { error: resetError } =
+        await supabase.auth.resetPasswordForEmail(
+          recoveryAddress,
+          {
+            redirectTo,
+          },
+        );
+
+      if (resetError) {
+        setRecoveryError(
+          'Não foi possível enviar o link de recuperação. Verifique o e-mail e tente novamente.',
+        );
+        return;
+      }
+
+      setRecoverySent(true);
+    } catch {
+      setRecoveryError(
+        'Não foi possível conectar ao serviço de autenticação.',
+      );
+    } finally {
+      setRecoveryLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-100">
       <div className="grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]">
@@ -69,10 +136,7 @@ export default function Login() {
               </div>
 
               <div>
-                <p className="font-bold">
-                  SGOF
-                </p>
-
+                <p className="font-bold">SGOF</p>
                 <p className="text-xs text-blue-200">
                   HU-UFCAT
                 </p>
@@ -205,12 +269,22 @@ export default function Login() {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="password"
-                    className="mb-2 block text-sm font-semibold text-slate-700"
-                  >
-                    Senha
-                  </label>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-semibold text-slate-700"
+                    >
+                      Senha
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={openRecovery}
+                      className="text-xs font-semibold text-blue-600 transition hover:text-blue-800"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </div>
 
                   <div className="relative">
                     <LockKeyhole
@@ -309,6 +383,137 @@ export default function Login() {
           </div>
         </section>
       </div>
+
+      {/* Recuperação de senha */}
+      {recoveryOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-7">
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                  <KeyRound size={21} />
+                </div>
+
+                <div>
+                  <h2 className="font-bold text-slate-900">
+                    Recuperar senha
+                  </h2>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Enviaremos um link para você definir uma nova
+                    senha.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeRecovery}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Fechar"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            {!recoverySent ? (
+              <form
+                onSubmit={handleRecovery}
+                className="space-y-5"
+              >
+                <div>
+                  <label
+                    htmlFor="recoveryEmail"
+                    className="mb-2 block text-sm font-semibold text-slate-700"
+                  >
+                    E-mail
+                  </label>
+
+                  <div className="relative">
+                    <Mail
+                      size={18}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+
+                    <input
+                      id="recoveryEmail"
+                      type="email"
+                      autoComplete="email"
+                      value={recoveryEmail}
+                      onChange={(event) => {
+                        setRecoveryEmail(event.target.value);
+                        setRecoveryError('');
+                      }}
+                      placeholder="seu.email@instituicao.gov.br"
+                      className="w-full rounded-xl border border-slate-200 py-3.5 pl-11 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    />
+                  </div>
+                </div>
+
+                {recoveryError && (
+                  <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <AlertCircle
+                      size={18}
+                      className="mt-0.5 shrink-0"
+                    />
+                    {recoveryError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={recoveryLoading}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#002B49] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#003d66] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {recoveryLoading ? (
+                    <>
+                      <Loader2
+                        size={18}
+                        className="animate-spin"
+                      />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Mail size={17} />
+                      Enviar link de recuperação
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              <div>
+                <div className="flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4">
+                  <CheckCircle2
+                    size={21}
+                    className="mt-0.5 shrink-0 text-green-600"
+                  />
+
+                  <div>
+                    <p className="text-sm font-semibold text-green-800">
+                      Solicitação enviada
+                    </p>
+
+                    <p className="mt-1 text-sm leading-5 text-green-700">
+                      Se houver uma conta vinculada ao e-mail
+                      informado, você receberá as instruções para
+                      redefinir sua senha.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeRecovery}
+                  className="mt-5 w-full rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Voltar ao login
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
