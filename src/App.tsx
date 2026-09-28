@@ -22,6 +22,7 @@ import Dashboard from './pages/Dashboard';
 import NotasFiscais from './pages/NotasFiscais';
 import Regularidade from './pages/Regularidade';
 import Retencoes from './pages/Retencoes';
+import TabelaRetencoes from './pages/TabelaRetencoes';
 import Calculadoras from './pages/Calculadoras';
 import AcrescimoSupressao from './pages/AcrescimoSupressao';
 import BaseConhecimento from './pages/BaseConhecimento';
@@ -93,9 +94,14 @@ function UsuarioBloqueado() {
 }
 
 export default function App() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [perfil, setPerfil] = useState<UsuarioPerfil | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] =
+    useState<Session | null>(null);
+
+  const [perfil, setPerfil] =
+    useState<UsuarioPerfil | null>(null);
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -115,9 +121,10 @@ export default function App() {
 
       setLoading(true);
 
-      const perfilUsuario = await buscarPerfilUsuario(
-        currentSession.user.id,
-      );
+      const perfilUsuario =
+        await buscarPerfilUsuario(
+          currentSession.user.id,
+        );
 
       if (!mounted) return;
 
@@ -153,7 +160,10 @@ export default function App() {
     return <LoadingScreen />;
   }
 
-  if (session && (!perfil || !perfil.ativo)) {
+  if (
+    session &&
+    (!perfil || !perfil.ativo)
+  ) {
     return <UsuarioBloqueado />;
   }
 
@@ -208,6 +218,11 @@ export default function App() {
                   />
 
                   <Route
+                    path="/retencoes/tabela-de-bolso"
+                    element={<TabelaRetencoes />}
+                  />
+
+                  <Route
                     path="/calculadoras"
                     element={<Calculadoras />}
                   />
@@ -224,7 +239,9 @@ export default function App() {
 
                   <Route
                     path="/base-conhecimento/estrutura-orcamentaria"
-                    element={<EstruturaOrcamentaria />}
+                    element={
+                      <EstruturaOrcamentaria />
+                    }
                   />
 
                   <Route
@@ -239,7 +256,9 @@ export default function App() {
 
                   <Route
                     path="/base-conhecimento/classificador-orcamentario"
-                    element={<ClassificadorOrcamentario />}
+                    element={
+                      <ClassificadorOrcamentario />
+                    }
                   />
 
                   <Route
@@ -249,7 +268,9 @@ export default function App() {
 
                   <Route
                     path="/checklist/disponibilidade"
-                    element={<DisponibilidadeOrcamentaria />}
+                    element={
+                      <DisponibilidadeOrcamentaria />
+                    }
                   />
 
                   <Route
@@ -264,19 +285,30 @@ export default function App() {
                       administrador ? (
                         <Usuarios />
                       ) : (
-                        <Navigate to="/" replace />
+                        <Navigate
+                          to="/"
+                          replace
+                        />
                       )
                     }
                   />
 
                   <Route
                     path="*"
-                    element={<Navigate to="/" replace />}
+                    element={
+                      <Navigate
+                        to="/"
+                        replace
+                      />
+                    }
                   />
                 </Routes>
               </AppLayout>
             ) : (
-              <Navigate to="/login" replace />
+              <Navigate
+                to="/login"
+                replace
+              />
             )
           }
         />
