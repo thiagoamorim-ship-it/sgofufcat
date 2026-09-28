@@ -23,6 +23,8 @@ import NotasFiscais from './pages/NotasFiscais';
 import Regularidade from './pages/Regularidade';
 import Retencoes from './pages/Retencoes';
 import TabelaRetencoes from './pages/TabelaRetencoes';
+import LegislacaoRetencoes from './pages/LegislacaoRetencoes';
+import ProcedimentosRetencoes from './pages/ProcedimentosRetencoes';
 import Calculadoras from './pages/Calculadoras';
 import AcrescimoSupressao from './pages/AcrescimoSupressao';
 import BaseConhecimento from './pages/BaseConhecimento';
@@ -220,6 +222,16 @@ export default function App() {
                   <Route
                     path="/retencoes/tabela-de-bolso"
                     element={<TabelaRetencoes />}
+                  />
+
+                  <Route
+                    path="/retencoes/legislacao"
+                    element={<LegislacaoRetencoes />}
+                  />
+
+                  <Route
+                    path="/retencoes/procedimentos"
+                    element={<ProcedimentosRetencoes />}
                   />
 
                   <Route
