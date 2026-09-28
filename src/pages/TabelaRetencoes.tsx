@@ -3,150 +3,267 @@ import { useNavigate } from 'react-router-dom';
 
 import {
   ArrowLeft,
+  ArrowUpRight,
   BookOpen,
+  Building2,
   Calculator,
-  Info,
+  CheckCircle2,
+  Landmark,
   Search,
   ShieldCheck,
+  Stethoscope,
 } from 'lucide-react';
 
-type Categoria = {
+const SIRT_URL =
+  'https://sirt-web.hatchable.site/login';
+
+const IN_1234_URL =
+  'https://normas.receita.fazenda.gov.br/sijut2consulta/consulta.action?termoBusca=in%201234';
+
+const IN_2110_URL =
+  'https://normas.receita.fazenda.gov.br/sijut2consulta/consulta/link.action?idAto=126687';
+
+type ItemRetencao = {
   id: string;
   titulo: string;
+  subtitulo: string;
+  categoria: string;
+  destaque?: string;
   descricao: string;
+  conferir: string[];
+  fundamento: string;
+  fonte?: string;
   termos: string[];
+  icon: typeof BookOpen;
 };
 
-const categorias: Categoria[] = [
+const itens: ItemRetencao[] = [
   {
-    id: 'aquisicao',
+    id: 'bens',
     titulo: 'Aquisição de bens',
+    subtitulo: 'Fornecimento de materiais e produtos',
+    categoria: 'Federal',
     descricao:
-      'Referências para análise de retenções em aquisições de materiais e bens.',
+      'Os pagamentos efetuados pela Administração Pública Federal a pessoas jurídicas pelo fornecimento de bens estão abrangidos pelas regras de retenção da IN RFB nº 1.234/2012.',
+    conferir: [
+      'Natureza do bem adquirido.',
+      'Enquadramento no Anexo I da IN RFB nº 1.234/2012.',
+      'Situação tributária do fornecedor.',
+      'Eventuais hipóteses de dispensa ou tratamento específico.',
+      'Correspondência entre nota fiscal, empenho e objeto contratado.',
+    ],
+    fundamento:
+      'IN RFB nº 1.234/2012, especialmente Anexo I.',
+    fonte: IN_1234_URL,
     termos: [
       'aquisição',
       'bens',
       'material',
       'produto',
       'mercadoria',
+      'hospitalar',
+      'medicamento',
     ],
+    icon: Building2,
   },
   {
     id: 'servicos',
     titulo: 'Prestação de serviços',
+    subtitulo: 'Serviços contratados de pessoas jurídicas',
+    categoria: 'Federal',
     descricao:
-      'Referências para análise de retenções relacionadas à prestação de serviços.',
+      'Os pagamentos por prestação de serviços também devem ser enquadrados conforme a natureza do serviço e as regras da IN RFB nº 1.234/2012.',
+    conferir: [
+      'Descrição efetiva do serviço prestado.',
+      'Objeto do contrato e da nota fiscal.',
+      'Enquadramento no Anexo I da IN RFB nº 1.234/2012.',
+      'Possível incidência de retenção previdenciária.',
+      'Possível incidência de ISS.',
+    ],
+    fundamento:
+      'IN RFB nº 1.234/2012 e normas específicas conforme o serviço.',
+    fonte: IN_1234_URL,
     termos: [
       'serviço',
       'serviços',
       'prestação',
+      'contrato',
       'contratação',
     ],
+    icon: Stethoscope,
   },
   {
     id: 'simples',
     titulo: 'Simples Nacional',
+    subtitulo: 'Fornecedor optante pelo regime',
+    categoria: 'Fornecedor',
     descricao:
-      'Pontos de atenção quando o fornecedor é optante pelo Simples Nacional.',
+      'A condição de optante pelo Simples Nacional deve ser identificada antes da retenção. O enquadramento exige atenção à natureza da receita e às regras específicas aplicáveis.',
+    conferir: [
+      'Confirmar se a empresa é optante pelo Simples Nacional.',
+      'Verificar se a receita da operação está abrangida pelo regime.',
+      'Conferir a documentação ou declaração exigível.',
+      'Não presumir dispensa apenas pela informação constante da nota fiscal.',
+      'Verificar separadamente INSS e ISS quando aplicáveis.',
+    ],
+    fundamento:
+      'IN RFB nº 1.234/2012 e legislação do Simples Nacional.',
+    fonte: IN_1234_URL,
     termos: [
       'simples',
       'simples nacional',
       'optante',
       'mei',
+      'microempresa',
+      'epp',
     ],
+    icon: ShieldCheck,
   },
   {
     id: 'ir',
     titulo: 'Imposto de Renda — IR',
+    subtitulo: 'Retenção federal',
+    categoria: 'Federal',
     descricao:
-      'Consulta rápida para situações que exigem análise de retenção do Imposto de Renda.',
+      'A alíquota do IR depende do enquadramento do bem ou serviço no Anexo I da IN RFB nº 1.234/2012. Não deve ser aplicada uma alíquota única a todos os pagamentos.',
+    conferir: [
+      'Identificar exatamente o bem ou serviço.',
+      'Localizar o enquadramento correspondente no Anexo I.',
+      'Conferir a alíquota de IR aplicável à operação.',
+      'Verificar hipóteses de isenção, imunidade ou dispensa.',
+      'Registrar o fundamento utilizado na análise.',
+    ],
+    fundamento:
+      'IN RFB nº 1.234/2012, Anexo I.',
+    fonte: IN_1234_URL,
     termos: [
       'ir',
       'irrf',
       'imposto de renda',
+      'renda',
     ],
+    icon: Landmark,
   },
   {
     id: 'contribuicoes',
-    titulo: 'PIS/Pasep, Cofins e CSLL',
+    titulo: 'CSLL, Cofins e PIS/Pasep',
+    subtitulo: 'Contribuições federais',
+    categoria: 'Federal',
     descricao:
-      'Referências para análise das contribuições sociais sujeitas à retenção.',
+      'As contribuições devem ser verificadas conforme o enquadramento da operação e as hipóteses previstas na legislação de retenções aplicável à Administração Pública.',
+    conferir: [
+      'Natureza do pagamento.',
+      'Enquadramento no Anexo I da IN RFB nº 1.234/2012.',
+      'Condição tributária do fornecedor.',
+      'Hipóteses específicas de não retenção.',
+      'Compatibilidade entre objeto contratado e documento fiscal.',
+    ],
+    fundamento:
+      'IN RFB nº 1.234/2012, especialmente Anexo I.',
+    fonte: IN_1234_URL,
     termos: [
+      'csll',
+      'cofins',
       'pis',
       'pasep',
-      'cofins',
-      'csll',
       'contribuições',
     ],
+    icon: Calculator,
   },
   {
     id: 'inss',
     titulo: 'INSS',
+    subtitulo: 'Retenção previdenciária',
+    categoria: 'Previdenciária',
+    destaque: '11% quando caracterizada a hipótese legal',
     descricao:
-      'Pontos de atenção para serviços sujeitos à análise de retenção previdenciária.',
+      'A retenção previdenciária não incide automaticamente sobre todo serviço. A regra geral do art. 110 da IN RFB nº 2.110/2022 prevê retenção de 11% quando o serviço estiver sujeito à retenção e for prestado nas condições previstas na norma.',
+    conferir: [
+      'Se existe cessão de mão de obra ou empreitada.',
+      'Se o serviço está entre as hipóteses previstas nos arts. 111 e 112.',
+      'Forma efetiva de execução do contrato.',
+      'Hipóteses de dispensa da retenção.',
+      'Base de cálculo e eventual fornecimento de materiais ou equipamentos.',
+    ],
+    fundamento:
+      'IN RFB nº 2.110/2022, arts. 110 a 119.',
+    fonte: IN_2110_URL,
     termos: [
       'inss',
       'previdência',
       'previdenciária',
+      '11%',
       'mão de obra',
       'cessão',
+      'empreitada',
+      'limpeza',
+      'vigilância',
+      'construção',
     ],
+    icon: ShieldCheck,
   },
   {
     id: 'iss',
     titulo: 'ISS',
+    subtitulo: 'Imposto Sobre Serviços',
+    categoria: 'Municipal',
     descricao:
-      'Referências para conferência do Imposto Sobre Serviços nas contratações.',
+      'O ISS deve ser analisado separadamente das retenções federais, considerando a natureza do serviço, o local de incidência e a legislação municipal aplicável.',
+    conferir: [
+      'Município competente para cobrança do imposto.',
+      'Local onde o serviço é considerado devido.',
+      'Código e natureza do serviço.',
+      'Responsabilidade tributária do tomador.',
+      'Alíquota prevista na legislação municipal aplicável.',
+    ],
+    fundamento:
+      'LC nº 116/2003 e legislação municipal aplicável.',
     termos: [
       'iss',
       'issqn',
       'municipal',
       'município',
+      'catalão',
     ],
+    icon: Landmark,
   },
 ];
 
 export default function TabelaRetencoes() {
   const navigate = useNavigate();
+  const [pesquisa, setPesquisa] = useState('');
+  const [aberto, setAberto] = useState<string | null>(
+    null,
+  );
 
-  const [pesquisa, setPesquisa] =
-    useState('');
+  const filtrados = useMemo(() => {
+    const termo = pesquisa.trim().toLowerCase();
 
-  const categoriasFiltradas =
-    useMemo(() => {
-      const termo = pesquisa
-        .trim()
+    if (!termo) return itens;
+
+    return itens.filter((item) => {
+      const conteudo = [
+        item.titulo,
+        item.subtitulo,
+        item.categoria,
+        item.descricao,
+        item.fundamento,
+        ...item.termos,
+        ...item.conferir,
+      ]
+        .join(' ')
         .toLowerCase();
 
-      if (!termo) {
-        return categorias;
-      }
-
-      return categorias.filter(
-        (categoria) =>
-          categoria.titulo
-            .toLowerCase()
-            .includes(termo) ||
-          categoria.descricao
-            .toLowerCase()
-            .includes(termo) ||
-          categoria.termos.some(
-            (item) =>
-              item
-                .toLowerCase()
-                .includes(termo),
-          ),
-      );
-    }, [pesquisa]);
+      return conteudo.includes(termo);
+    });
+  }, [pesquisa]);
 
   return (
     <div className="space-y-6">
       <section>
         <button
           type="button"
-          onClick={() =>
-            navigate('/retencoes')
-          }
+          onClick={() => navigate('/retencoes')}
           className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-blue-700"
         >
           <ArrowLeft size={17} />
@@ -162,127 +279,196 @@ export default function TabelaRetencoes() {
         </h1>
 
         <p className="mt-2 max-w-3xl text-slate-500">
-          Consulta rápida de apoio à
-          conferência das retenções
-          tributárias nas rotinas do SGOF.
+          Referência rápida para apoiar a conferência das
+          retenções tributárias nas rotinas do SGOF.
         </p>
       </section>
 
       <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
         <div className="flex items-start gap-3">
           <ShieldCheck
-            size={20}
+            size={21}
             className="mt-0.5 shrink-0 text-blue-600"
           />
 
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">
-              Material de apoio
+            <h2 className="font-semibold text-slate-900">
+              Apoio à conferência
             </h2>
 
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              A tabela de bolso auxilia na
-              identificação dos pontos que
-              precisam ser conferidos. A
-              análise tributária e o cálculo
-              das retenções permanecem no
-              SIRT.
+              Esta página auxilia na identificação dos pontos
+              que precisam ser conferidos. A definição da
+              retenção aplicável depende do enquadramento da
+              operação e da documentação do processo.
             </p>
           </div>
         </div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <label
-          htmlFor="pesquisa-retencoes"
-          className="mb-2 block text-sm font-semibold text-slate-700"
-        >
-          Pesquisar
-        </label>
+        <div className="flex flex-col gap-4 lg:flex-row">
+          <div className="relative flex-1">
+            <Search
+              size={19}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            />
 
-        <div className="relative">
-          <Search
-            size={19}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-          />
+            <input
+              type="text"
+              value={pesquisa}
+              onChange={(event) =>
+                setPesquisa(event.target.value)
+              }
+              placeholder="Ex.: material hospitalar, Simples Nacional, INSS, limpeza..."
+              className="h-12 w-full rounded-xl border border-slate-200 pl-12 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+            />
+          </div>
 
-          <input
-            id="pesquisa-retencoes"
-            type="text"
-            value={pesquisa}
-            onChange={(event) =>
-              setPesquisa(
-                event.target.value,
-              )
-            }
-            placeholder="Ex.: Simples Nacional, INSS, Cofins, serviços..."
-            className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
-          />
+          <a
+            href={SIRT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Analisar no SIRT
+            <ArrowUpRight size={17} />
+          </a>
         </div>
-
-        <p className="mt-2 text-xs text-slate-400">
-          Pesquise pelo tributo, tipo de
-          contratação ou situação do
-          fornecedor.
-        </p>
       </section>
 
       <section>
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              Consultas rápidas
+              Situações para consulta
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Selecione o assunto que deseja
-              consultar.
+              Clique em um item para visualizar os pontos de
+              conferência.
             </p>
           </div>
 
           <span className="text-xs font-medium text-slate-400">
-            {categoriasFiltradas.length}{' '}
-            resultado
-            {categoriasFiltradas.length === 1
-              ? ''
-              : 's'}
+            {filtrados.length}{' '}
+            {filtrados.length === 1
+              ? 'resultado'
+              : 'resultados'}
           </span>
         </div>
 
-        {categoriasFiltradas.length >
-        0 ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {categoriasFiltradas.map(
-              (categoria) => (
-                <article
-                  key={categoria.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        <div className="space-y-3">
+          {filtrados.map((item) => {
+            const Icon = item.icon;
+            const expandido = aberto === item.id;
+
+            return (
+              <article
+                key={item.id}
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setAberto(
+                      expandido ? null : item.id,
+                    )
+                  }
+                  className="flex w-full items-start gap-4 p-5 text-left transition hover:bg-slate-50"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                    <BookOpen size={20} />
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                    <Icon size={21} />
                   </div>
 
-                  <h3 className="mt-4 font-semibold text-slate-900">
-                    {categoria.titulo}
-                  </h3>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-semibold text-slate-900">
+                        {item.titulo}
+                      </h3>
 
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    {
-                      categoria.descricao
-                    }
-                  </p>
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                        {item.categoria}
+                      </span>
+                    </div>
 
-                  <div className="mt-5 border-t border-slate-100 pt-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                      <Info size={12} />
-                      Conteúdo em preparação
-                    </span>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {item.subtitulo}
+                    </p>
+
+                    {item.destaque && (
+                      <p className="mt-2 text-xs font-semibold text-blue-700">
+                        {item.destaque}
+                      </p>
+                    )}
                   </div>
-                </article>
-              ),
-            )}
-          </div>
-        ) : (
+
+                  <span className="mt-1 text-xl font-light text-slate-400">
+                    {expandido ? '−' : '+'}
+                  </span>
+                </button>
+
+                {expandido && (
+                  <div className="border-t border-slate-100 px-5 pb-6 pt-5 md:px-20">
+                    <p className="text-sm leading-6 text-slate-600">
+                      {item.descricao}
+                    </p>
+
+                    <div className="mt-5">
+                      <h4 className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                        O que conferir
+                      </h4>
+
+                      <div className="mt-3 space-y-2.5">
+                        {item.conferir.map(
+                          (ponto) => (
+                            <div
+                              key={ponto}
+                              className="flex items-start gap-2.5"
+                            >
+                              <CheckCircle2
+                                size={16}
+                                className="mt-0.5 shrink-0 text-emerald-600"
+                              />
+
+                              <p className="text-sm leading-5 text-slate-600">
+                                {ponto}
+                              </p>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-5 rounded-xl bg-slate-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Fundamento
+                      </p>
+
+                      <p className="mt-1 text-sm font-medium text-slate-700">
+                        {item.fundamento}
+                      </p>
+
+                      {item.fonte && (
+                        <a
+                          href={item.fonte}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-800"
+                        >
+                          Consultar fonte oficial
+                          <ArrowUpRight size={14} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+
+        {filtrados.length === 0 && (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center">
             <Search
               size={28}
@@ -294,32 +480,31 @@ export default function TabelaRetencoes() {
             </h3>
 
             <p className="mt-1 text-sm text-slate-400">
-              Tente pesquisar por outro
-              tributo ou situação.
+              Tente pesquisar por outro tributo, serviço ou
+              situação.
             </p>
           </div>
         )}
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+      <section className="rounded-2xl border border-amber-100 bg-amber-50/70 p-5">
         <div className="flex items-start gap-3">
-          <Calculator
+          <BookOpen
             size={20}
-            className="mt-0.5 shrink-0 text-slate-500"
+            className="mt-0.5 shrink-0 text-amber-700"
           />
 
           <div>
-            <h2 className="text-sm font-semibold text-slate-800">
-              Próxima etapa
+            <h2 className="text-sm font-semibold text-slate-900">
+              Atenção
             </h2>
 
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              As regras, alíquotas, hipóteses
-              de retenção, exceções e bases
-              legais serão incluídas somente
-              após validação das referências
-              utilizadas nas rotinas do
-              HU-UFCAT.
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              A tabela de bolso não substitui a análise do
+              documento fiscal, do contrato, da legislação
+              aplicável ou do SIRT. Em situações específicas,
+              confirme o enquadramento antes da retenção e do
+              pagamento.
             </p>
           </div>
         </div>
