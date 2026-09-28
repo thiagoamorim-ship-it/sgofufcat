@@ -17,8 +17,7 @@ import {
 
 import { useNavigate } from 'react-router-dom';
 
-const SIRT_URL =
-  'https://sirt-web.hatchable.site/login';
+const SIRT_URL = 'https://sirt-web.hatchable.site/login';
 
 const etapas = [
   {
@@ -36,7 +35,6 @@ const etapas = [
     alerta:
       'Não determine o código da receita apenas pela descrição do item na nota fiscal.',
   },
-
   {
     numero: '02',
     titulo: 'Verificar hipóteses especiais',
@@ -53,7 +51,6 @@ const etapas = [
     alerta:
       'Uma exceção pode alterar completamente o resultado da análise. Não avance automaticamente para a alíquota geral.',
   },
-
   {
     numero: '03',
     titulo: 'Identificar o bem ou serviço',
@@ -70,7 +67,6 @@ const etapas = [
     alerta:
       'Termos semelhantes podem possuir tratamentos tributários diferentes.',
   },
-
   {
     numero: '04',
     titulo: 'Analisar IR, CSLL, Cofins e PIS/Pasep',
@@ -89,7 +85,6 @@ const etapas = [
     alerta:
       'Quando mais de um código for possível, confirme as condições específicas antes de concluir.',
   },
-
   {
     numero: '05',
     titulo: 'Analisar retenção previdenciária',
@@ -106,7 +101,6 @@ const etapas = [
     alerta:
       'Não aplique 11% de INSS automaticamente a todo serviço. A incidência depende da hipótese legal.',
   },
-
   {
     numero: '06',
     titulo: 'Analisar ISS',
@@ -124,7 +118,6 @@ const etapas = [
     alerta:
       'A tabela da IN RFB nº 1.234/2012 não determina a retenção do ISS.',
   },
-
   {
     numero: '07',
     titulo: 'Conferir o documento fiscal',
@@ -142,7 +135,6 @@ const etapas = [
     alerta:
       'Divergências relevantes devem ser esclarecidas antes da retenção e do pagamento.',
   },
-
   {
     numero: '08',
     titulo: 'Concluir a análise',
@@ -162,6 +154,36 @@ const etapas = [
       'A conclusão deve permitir identificar como o enquadramento tributário foi determinado.',
   },
 ];
+
+function Resumo({
+  numero,
+  titulo,
+  texto,
+}: {
+  numero: string;
+  titulo: string;
+  texto: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 min-w-9 items-center justify-center rounded-lg bg-blue-50 px-2 text-sm font-bold text-blue-700">
+          {numero}
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">
+            {titulo}
+          </h3>
+
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            {texto}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ProcedimentosRetencoes() {
   const navigate = useNavigate();
