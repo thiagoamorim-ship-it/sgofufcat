@@ -29,9 +29,9 @@ export default function Retencoes() {
         </h1>
 
         <p className="mt-2 max-w-3xl text-slate-500">
-          Consulte materiais de apoio às rotinas
-          tributárias e acesse o sistema especializado
-          utilizado para análise das retenções.
+          Consulte ferramentas, legislação e procedimentos
+          de apoio à análise e conferência das retenções
+          tributárias.
         </p>
       </section>
 
@@ -60,9 +60,9 @@ export default function Retencoes() {
                 </p>
 
                 <p className="mt-3 text-sm leading-6 text-slate-500">
-                  Utilize o SIRT para realizar as análises
-                  de retenções tributárias. O acesso é
-                  realizado em ambiente externo ao SGOF.
+                  Ferramenta externa complementar para
+                  apoio às análises de retenções
+                  tributárias.
                 </p>
               </div>
             </div>
@@ -97,8 +97,9 @@ export default function Retencoes() {
           </h2>
 
           <p className="text-sm text-slate-500">
-            Consulte referências rápidas e orientações
-            para apoiar a conferência das retenções.
+            Utilize os recursos do SGOF para apoiar a
+            identificação, conferência e fundamentação das
+            retenções.
           </p>
         </div>
 
@@ -106,7 +107,7 @@ export default function Retencoes() {
           <SupportCard
             icon={BookOpen}
             title="Tabela de bolso"
-            description="Consulta rápida de tributos, alíquotas e situações de retenção."
+            description="Assistente para consulta de códigos, alíquotas e enquadramentos das retenções federais."
             status="Disponível"
             onClick={() =>
               navigate('/retencoes/tabela-de-bolso')
@@ -116,15 +117,21 @@ export default function Retencoes() {
           <SupportCard
             icon={FileText}
             title="Legislação"
-            description="Normativos e orientações utilizados nas rotinas de retenções."
-            status="Em preparação"
+            description="Principais normativos utilizados como referência nas análises de retenções."
+            status="Disponível"
+            onClick={() =>
+              navigate('/retencoes/legislacao')
+            }
           />
 
           <SupportCard
             icon={CheckCircle2}
             title="Procedimentos"
-            description="Orientações internas para conferência e instrução dos processos."
-            status="Em preparação"
+            description="Roteiro de apoio para conferência das retenções e instrução da análise."
+            status="Disponível"
+            onClick={() =>
+              navigate('/retencoes/procedimentos')
+            }
           />
         </div>
       </section>
@@ -138,15 +145,15 @@ export default function Retencoes() {
 
           <div>
             <h3 className="text-sm font-semibold text-slate-900">
-              Sistema especializado
+              Apoio à análise tributária
             </h3>
 
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              O SGOF funciona como ponto central de
-              acesso e apoio às rotinas. A análise
-              tributária permanece no SIRT, evitando
-              duplicidade de cálculos e regras entre
-              os sistemas.
+              O SGOF reúne recursos de apoio à análise das
+              retenções, incluindo consulta de códigos e
+              alíquotas, referências normativas e roteiro de
+              conferência. O SIRT permanece disponível como
+              ferramenta externa complementar.
             </p>
           </div>
         </div>
@@ -209,6 +216,7 @@ function SupportCard({
       {disponivel && (
         <div className="mt-5 flex items-center gap-2 text-xs font-semibold text-blue-700">
           Consultar
+
           <ArrowRight
             size={15}
             className="transition group-hover:translate-x-1"
