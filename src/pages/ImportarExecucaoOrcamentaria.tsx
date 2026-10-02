@@ -60,9 +60,6 @@ function detectarTipoPorMatriz(
 
   /*
    * EMPENHOS
-   *
-   * Nos relatórios do Tesouro os estágios podem
-   * aparecer em linhas diferentes do cabeçalho.
    */
   if (
     conteudo.includes('ne ccor') &&
@@ -88,9 +85,6 @@ function detectarTipoPorMatriz(
 
   /*
    * RAP
-   *
-   * Verificamos depois de Empenhos porque ambos
-   * podem possuir NE CCOR e Conta Contábil.
    */
   if (
     conteudo.includes('ne ccor') &&
@@ -119,14 +113,6 @@ function nomeTipo(tipo: TipoBase) {
   }
 }
 
-/*
- * Converte uma matriz do Excel em objetos.
- *
- * O Tesouro Gerencial pode exportar relatórios
- * com duas ou três linhas compondo o cabeçalho.
- * Por isso não podemos usar diretamente a primeira
- * linha como nome das colunas.
- */
 function processarMatriz(
   matrizOriginal: unknown[][],
 ): ResultadoLeitura {
@@ -147,22 +133,9 @@ function processarMatriz(
   }
 
   /*
+   * =====================================================
    * EMPENHOS
-   *
-   * Procuramos a linha onde aparecem os códigos
-   * das contas dos quatro estágios:
-   *
-   * 622920101
-   * 622920102
-   * 622920103
-   * 622920104
-   *
-   * e a linha seguinte onde aparecem os nomes:
-   *
-   * EMPENHOS A LIQUIDAR
-   * EMPENHOS EM LIQUIDAÇÃO
-   * EMPENHOS LIQUIDADOS A PAGAR
-   * EMPENHOS PAGOS
+   * =====================================================
    */
   if (tipo === 'empenhos') {
     let linhaCodigos = -1;
@@ -209,11 +182,6 @@ function processarMatriz(
       }
     }
 
-    /*
-     * Pelo padrão do Tesouro, a primeira linha
-     * contém os nomes das dimensões e as linhas
-     * seguintes complementam as colunas contábeis.
-     */
     const linhaBase = matriz[0] || [];
 
     const maiorQuantidadeColunas =
@@ -254,10 +222,6 @@ function processarMatriz(
 
       let nomeFinal = base;
 
-      /*
-       * Identificação explícita das quatro
-       * contas de execução.
-       */
       if (
         codigo.includes('622920101') ||
         normalizar(nome).includes(
@@ -289,11 +253,6 @@ function processarMatriz(
         nomeFinal = 'Empenhos Pagos';
       }
 
-      /*
-       * Se a primeira linha estiver vazia,
-       * tentamos aproveitar informações das
-       * linhas complementares.
-       */
       if (!nomeFinal) {
         nomeFinal =
           nome ||
@@ -301,9 +260,6 @@ function processarMatriz(
           `Coluna ${coluna + 1}`;
       }
 
-      /*
-       * Evita nomes repetidos.
-       */
       let nomeUnico = nomeFinal;
       let contador = 2;
 
@@ -319,10 +275,6 @@ function processarMatriz(
       colunas.push(nomeUnico);
     }
 
-    /*
-     * Os dados começam depois da última linha
-     * estrutural encontrada.
-     */
     const ultimaLinhaCabecalho =
       Math.max(
         0,
@@ -374,11 +326,440 @@ function processarMatriz(
   }
 
   /*
-   * RAP e CRÉDITO ORÇAMENTÁRIO
+   * =====================================================
+   * RESTOS A PAGAR - RAP
+   * =====================================================
    *
-   * Nesses relatórios procuramos a linha com
-   * maior quantidade de campos textuais
-   * reconhecíveis nas primeiras linhas.
+   * O RAP possui cabeçalho multinível.
+   * Aqui tratamos a estrutura separadamente para impedir
+   * que linhas de cabeçalho sejam interpretadas como dados.
+   */
+  if (tipo === 'rap') {
+    const limiteCabecalho =
+      Math.min(matriz.length, 15);
+
+    let linhaPrincipal = -1;
+    let linhaComplementar = -1;
+    let melhorPontuacao = -1;
+
+    /*
+     * Localiza a principal linha do cabeçalho.
+     */
+    for (
+      let indice = 0;
+      indice < limiteCabecalho;
+      indice += 1
+    ) {
+      const linha = matriz[indice] || [];
+
+      const conteudoLinha = linha
+        .map(normalizar)
+        .join(' | ');
+
+      let pontuacao = 0;
+
+      if (
+        conteudoLinha.includes('ne ccor')
+      ) {
+        pontuacao += 4;
+      }
+
+      if (
+        conteudoLinha.includes('favorecido')
+      ) {
+        pontuacao += 2;
+      }
+
+      if (
+        conteudoLinha.includes(
+          'natureza despesa',
+        )
+      ) {
+        pontuacao += 2;
+      }
+
+      if (
+        conteudoLinha.includes('ptres')
+      ) {
+        pontuacao += 2;
+      }
+
+      if (
+        conteudoLinha.includes(
+          'fonte recursos',
+        )
+      ) {
+        pontuacao += 2;
+      }
+
+      if (
+        conteudoLinha.includes(
+          'conta contabil',
+        )
+      ) {
+        pontuacao += 2;
+      }
+
+      if (
+        conteudoLinha.includes('saldo')
+      ) {
+        pontuacao += 2;
+      }
+
+      if (pontuacao > melhorPontuacao) {
+        melhorPontuacao = pontuacao;
+        linhaPrincipal = indice;
+      }
+    }
+
+    if (linhaPrincipal < 0) {
+      return {
+        tipo: 'desconhecido',
+        colunas: [],
+        linhas: [],
+        linhaInicialDados: 0,
+      };
+    }
+
+    /*
+     * Procura uma segunda linha de cabeçalho.
+     *
+     * Normalmente ela possui termos como Código,
+     * Número e Nome.
+     */
+    for (
+      let indice = linhaPrincipal + 1;
+      indice <
+      Math.min(
+        matriz.length,
+        linhaPrincipal + 4,
+      );
+      indice += 1
+    ) {
+      const linha = matriz[indice] || [];
+
+      const conteudoLinha = linha
+        .map(normalizar)
+        .join(' | ');
+
+      const pareceCabecalho =
+        conteudoLinha.includes('numero') ||
+        conteudoLinha.includes('nome') ||
+        conteudoLinha.includes('codigo') ||
+        conteudoLinha.includes(
+          'conta contabil',
+        ) ||
+        conteudoLinha.includes(
+          'saldo - r$',
+        );
+
+      const pareceDado = linha.some(
+        (celula) => {
+          const valor = texto(celula)
+            .replace(/\s/g, '')
+            .toUpperCase();
+
+          return /NE\d+/.test(valor);
+        },
+      );
+
+      if (
+        pareceCabecalho &&
+        !pareceDado
+      ) {
+        linhaComplementar = indice;
+      }
+    }
+
+    const principal =
+      matriz[linhaPrincipal] || [];
+
+    const complementar =
+      linhaComplementar >= 0
+        ? matriz[linhaComplementar] || []
+        : [];
+
+    const quantidadeColunas = Math.max(
+      principal.length,
+      complementar.length,
+      ...matriz
+        .slice(
+          linhaPrincipal,
+          Math.min(
+            matriz.length,
+            linhaPrincipal + 5,
+          ),
+        )
+        .map((linha) => linha.length),
+    );
+
+    const colunas: string[] = [];
+
+    /*
+     * Em células mescladas, o Excel normalmente mantém
+     * o título apenas na primeira coluna do grupo.
+     * Por isso carregamos o último título principal.
+     */
+    let ultimoCabecalhoPrincipal = '';
+
+    for (
+      let indice = 0;
+      indice < quantidadeColunas;
+      indice += 1
+    ) {
+      const valorPrincipal =
+        texto(principal[indice]);
+
+      const valorComplementar =
+        texto(complementar[indice]);
+
+      if (valorPrincipal) {
+        ultimoCabecalhoPrincipal =
+          valorPrincipal;
+      }
+
+      let nomeFinal =
+        valorPrincipal ||
+        ultimoCabecalhoPrincipal;
+
+      if (
+        valorComplementar &&
+        normalizar(valorComplementar) !==
+          normalizar(nomeFinal)
+      ) {
+        nomeFinal = nomeFinal
+          ? `${nomeFinal} - ${valorComplementar}`
+          : valorComplementar;
+      }
+
+      const nomeNormalizado =
+        normalizar(nomeFinal);
+
+      /*
+       * Favorecido
+       */
+      if (
+        nomeNormalizado.includes(
+          'ne ccor - favorecido',
+        ) &&
+        (
+          nomeNormalizado.includes('numero') ||
+          nomeNormalizado.includes('codigo')
+        )
+      ) {
+        nomeFinal =
+          'NE CCor - Favorecido Número';
+      } else if (
+        nomeNormalizado.includes(
+          'ne ccor - favorecido',
+        ) &&
+        nomeNormalizado.includes('nome')
+      ) {
+        nomeFinal =
+          'NE CCor - Favorecido Nome';
+      }
+
+      /*
+       * Natureza da Despesa Detalhada
+       */
+      else if (
+        nomeNormalizado.includes(
+          'natureza despesa detalhada',
+        ) &&
+        (
+          nomeNormalizado.includes('codigo') ||
+          nomeNormalizado.includes('numero')
+        )
+      ) {
+        nomeFinal =
+          'Natureza Despesa Detalhada Código';
+      } else if (
+        nomeNormalizado.includes(
+          'natureza despesa detalhada',
+        ) &&
+        nomeNormalizado.includes('nome')
+      ) {
+        nomeFinal =
+          'Natureza Despesa Detalhada Nome';
+      }
+
+      /*
+       * Natureza da Despesa
+       */
+      else if (
+        nomeNormalizado.includes(
+          'natureza despesa',
+        ) &&
+        (
+          nomeNormalizado.includes('codigo') ||
+          nomeNormalizado.includes('numero')
+        )
+      ) {
+        nomeFinal =
+          'Natureza Despesa Código';
+      } else if (
+        nomeNormalizado.includes(
+          'natureza despesa',
+        ) &&
+        nomeNormalizado.includes('nome')
+      ) {
+        nomeFinal =
+          'Natureza Despesa Nome';
+      }
+
+      /*
+       * Fonte
+       */
+      else if (
+        nomeNormalizado.includes(
+          'fonte recursos detalhada',
+        ) &&
+        (
+          nomeNormalizado.includes('codigo') ||
+          nomeNormalizado.includes('numero')
+        )
+      ) {
+        nomeFinal =
+          'Fonte Recursos Detalhada Código';
+      } else if (
+        nomeNormalizado.includes(
+          'fonte recursos detalhada',
+        ) &&
+        nomeNormalizado.includes('nome')
+      ) {
+        nomeFinal =
+          'Fonte Recursos Detalhada Nome';
+      }
+
+      /*
+       * PI
+       */
+      else if (
+        (
+          nomeNormalizado === 'pi' ||
+          nomeNormalizado.startsWith('pi -')
+        ) &&
+        (
+          nomeNormalizado.includes('codigo') ||
+          nomeNormalizado.includes('numero')
+        )
+      ) {
+        nomeFinal = 'PI Código';
+      } else if (
+        (
+          nomeNormalizado === 'pi' ||
+          nomeNormalizado.startsWith('pi -')
+        ) &&
+        nomeNormalizado.includes('nome')
+      ) {
+        nomeFinal = 'PI Nome';
+      }
+
+      /*
+       * Campos sem título.
+       */
+      if (!nomeFinal) {
+        nomeFinal =
+          `Campo RAP ${indice + 1}`;
+      }
+
+      /*
+       * Evita nomes duplicados.
+       */
+      let nomeUnico = nomeFinal;
+      let contador = 2;
+
+      while (
+        colunas.includes(nomeUnico)
+      ) {
+        nomeUnico =
+          `${nomeFinal} (${contador})`;
+
+        contador += 1;
+      }
+
+      colunas.push(nomeUnico);
+    }
+
+    const ultimaLinhaCabecalho =
+      Math.max(
+        linhaPrincipal,
+        linhaComplementar,
+      );
+
+    const linhaInicialDados =
+      ultimaLinhaCabecalho + 1;
+
+    const linhas: Linha[] = [];
+
+    for (
+      let indice = linhaInicialDados;
+      indice < matriz.length;
+      indice += 1
+    ) {
+      const linha = matriz[indice] || [];
+
+      const possuiConteudo =
+        linha.some(
+          (celula) =>
+            texto(celula) !== '',
+        );
+
+      if (!possuiConteudo) {
+        continue;
+      }
+
+      /*
+       * Uma linha de RAP válida deve possuir
+       * identificação de Nota de Empenho.
+       *
+       * Isso impede que linhas residuais do cabeçalho
+       * sejam contabilizadas como registros.
+       */
+      const possuiNE = linha.some(
+        (celula) => {
+          const valor = texto(celula)
+            .replace(/\s/g, '')
+            .toUpperCase();
+
+          return (
+            valor.includes('NE') &&
+            /\d/.test(valor)
+          );
+        },
+      );
+
+      if (!possuiNE) {
+        continue;
+      }
+
+      const registro: Linha = {};
+
+      colunas.forEach(
+        (coluna, indiceColuna) => {
+          registro[coluna] =
+            linha[indiceColuna] ?? '';
+        },
+      );
+
+      linhas.push(registro);
+    }
+
+    return {
+      tipo,
+      colunas,
+      linhas,
+      linhaInicialDados,
+    };
+  }
+
+  /*
+   * =====================================================
+   * CRÉDITO ORÇAMENTÁRIO
+   * =====================================================
+   *
+   * Mantemos o processamento que já foi validado para
+   * Crédito Disponível - Gestão.
    */
   let melhorLinha = 0;
   let melhorPontuacao = -1;
@@ -555,6 +936,7 @@ export default function ImportarExecucaoOrcamentaria() {
       }
 
       let abaEncontrada = '';
+
       let resultadoEncontrado:
         | ResultadoLeitura
         | null = null;
@@ -576,12 +958,6 @@ export default function ImportarExecucaoOrcamentaria() {
           continue;
         }
 
-        /*
-         * header: 1 é essencial:
-         * queremos primeiro a matriz bruta,
-         * sem deixar a biblioteca decidir
-         * sozinha qual linha é o cabeçalho.
-         */
         const matriz =
           XLSX.utils.sheet_to_json<
             unknown[]
@@ -616,15 +992,11 @@ export default function ImportarExecucaoOrcamentaria() {
           abaEncontrada = nomeAba;
           resultadoEncontrado =
             resultado;
+
           break;
         }
       }
 
-      /*
-       * Caso nenhuma aba tenha sido reconhecida,
-       * ainda mostramos a primeira aba com dados
-       * para facilitar o diagnóstico.
-       */
       if (
         !resultadoEncontrado &&
         primeiraAbaComDados
@@ -693,7 +1065,6 @@ export default function ImportarExecucaoOrcamentaria() {
 
   return (
     <div className="space-y-6">
-
       {/* Cabeçalho */}
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
