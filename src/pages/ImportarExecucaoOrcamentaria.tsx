@@ -50,7 +50,6 @@ function linhaContem(
   );
 }
 
-
 function matrizComCelulasMescladas(
   worksheet: XLSX.WorkSheet,
 ): unknown[][] {
@@ -107,9 +106,7 @@ function detectarTipoPorMatriz(
     .map(normalizar)
     .join(' | ');
 
-  /*
-   * EMPENHOS
-   */
+  // EMPENHOS
   if (
     conteudo.includes('ne ccor') &&
     conteudo.includes('empenhos a liquidar') &&
@@ -118,9 +115,7 @@ function detectarTipoPorMatriz(
     return 'empenhos';
   }
 
-  /*
-   * CRÉDITO ORÇAMENTÁRIO
-   */
+  // CRÉDITO ORÇAMENTÁRIO
   if (
     conteudo.includes('ug executora') &&
     conteudo.includes('acao governo') &&
@@ -132,9 +127,7 @@ function detectarTipoPorMatriz(
     return 'credito_orcamentario';
   }
 
-  /*
-   * RAP
-   */
+  // RAP
   if (
     conteudo.includes('ne ccor') &&
     conteudo.includes('conta contabil') &&
@@ -384,12 +377,8 @@ function processarMatriz(
 
   /*
    * =====================================================
-   * RESTOS A PAGAR - RAP
+   * RAP
    * =====================================================
-   *
-   * O RAP possui cabeçalho multinível.
-   * Aqui tratamos a estrutura separadamente para impedir
-   * que linhas de cabeçalho sejam interpretadas como dados.
    */
   if (tipo === 'rap') {
     const limiteCabecalho =
@@ -399,9 +388,6 @@ function processarMatriz(
     let linhaComplementar = -1;
     let melhorPontuacao = -1;
 
-    /*
-     * Localiza a principal linha do cabeçalho.
-     */
     for (
       let indice = 0;
       indice < limiteCabecalho;
@@ -478,12 +464,6 @@ function processarMatriz(
       };
     }
 
-    /*
-     * Procura uma segunda linha de cabeçalho.
-     *
-     * Normalmente ela possui termos como Código,
-     * Número e Nome.
-     */
     for (
       let indice = linhaPrincipal + 1;
       indice <
@@ -551,12 +531,6 @@ function processarMatriz(
     );
 
     const colunas: string[] = [];
-
-    /*
-     * Em células mescladas, o Excel normalmente mantém
-     * o título apenas na primeira coluna do grupo.
-     * Por isso carregamos o último título principal.
-     */
     let ultimoCabecalhoPrincipal = '';
 
     for (
@@ -592,9 +566,6 @@ function processarMatriz(
       const nomeNormalizado =
         normalizar(nomeFinal);
 
-      /*
-       * Favorecido
-       */
       if (
         nomeNormalizado.includes(
           'ne ccor - favorecido',
@@ -614,12 +585,7 @@ function processarMatriz(
       ) {
         nomeFinal =
           'NE CCor - Favorecido Nome';
-      }
-
-      /*
-       * Natureza da Despesa Detalhada
-       */
-      else if (
+      } else if (
         nomeNormalizado.includes(
           'natureza despesa detalhada',
         ) &&
@@ -638,12 +604,7 @@ function processarMatriz(
       ) {
         nomeFinal =
           'Natureza Despesa Detalhada Nome';
-      }
-
-      /*
-       * Natureza da Despesa
-       */
-      else if (
+      } else if (
         nomeNormalizado.includes(
           'natureza despesa',
         ) &&
@@ -662,12 +623,7 @@ function processarMatriz(
       ) {
         nomeFinal =
           'Natureza Despesa Nome';
-      }
-
-      /*
-       * Fonte
-       */
-      else if (
+      } else if (
         nomeNormalizado.includes(
           'fonte recursos detalhada',
         ) &&
@@ -686,12 +642,7 @@ function processarMatriz(
       ) {
         nomeFinal =
           'Fonte Recursos Detalhada Nome';
-      }
-
-      /*
-       * PI
-       */
-      else if (
+      } else if (
         (
           nomeNormalizado === 'pi' ||
           nomeNormalizado.startsWith('pi -')
@@ -712,17 +663,11 @@ function processarMatriz(
         nomeFinal = 'PI Nome';
       }
 
-      /*
-       * Campos sem título.
-       */
       if (!nomeFinal) {
         nomeFinal =
           `Campo RAP ${indice + 1}`;
       }
 
-      /*
-       * Evita nomes duplicados.
-       */
       let nomeUnico = nomeFinal;
       let contador = 2;
 
@@ -766,13 +711,6 @@ function processarMatriz(
         continue;
       }
 
-      /*
-       * Uma linha de RAP válida deve possuir
-       * identificação de Nota de Empenho.
-       *
-       * Isso impede que linhas residuais do cabeçalho
-       * sejam contabilizadas como registros.
-       */
       const primeiraColuna = texto(
         linha[0],
       )
@@ -810,9 +748,6 @@ function processarMatriz(
    * =====================================================
    * CRÉDITO ORÇAMENTÁRIO
    * =====================================================
-   *
-   * Mantemos o processamento que já foi validado para
-   * Crédito Disponível - Gestão.
    */
   let melhorLinha = 0;
   let melhorPontuacao = -1;
@@ -1034,15 +969,6 @@ export default function ImportarExecucaoOrcamentaria() {
         let resultado =
           processarMatriz(matriz);
 
-        /*
-         * RAP v2:
-         * o Tesouro Gerencial utiliza células mescladas no
-         * cabeçalho. Se a base for RAP, expandimos essas
-         * mesclas somente em memória e processamos novamente.
-         *
-         * Empenhos e Crédito Orçamentário permanecem usando
-         * exatamente a leitura anterior.
-         */
         if (resultado.tipo === 'rap') {
           const matrizRap =
             matrizComCelulasMescladas(
@@ -1146,7 +1072,11 @@ export default function ImportarExecucaoOrcamentaria() {
   async function confirmarImportacao() {
     if (
       !arquivo ||
-      (tipo !== 'rap' && tipo !== 'empenhos') ||
+      (
+        tipo !== 'rap' &&
+        tipo !== 'empenhos' &&
+        tipo !== 'credito_orcamentario'
+      ) ||
       !linhas.length
     ) {
       return;
@@ -1218,13 +1148,20 @@ export default function ImportarExecucaoOrcamentaria() {
       );
 
       const nomeBase =
-        tipo === 'rap' ? 'RAP' : 'Empenhos';
+        tipo === 'rap'
+          ? 'RAP'
+          : tipo === 'credito_orcamentario'
+            ? 'Crédito Orçamentário'
+            : 'Empenhos';
 
       setSucesso(
         `${quantidade.toLocaleString('pt-BR')} registro(s) de ${nomeBase} importado(s) com sucesso.`,
       );
     } catch (error: any) {
-      console.error('Erro ao confirmar importação:', error);
+      console.error(
+        'Erro ao confirmar importação:',
+        error,
+      );
 
       setErro(
         error?.message ||
@@ -1523,18 +1460,25 @@ export default function ImportarExecucaoOrcamentaria() {
 
           {/* Confirmação */}
           <div className="flex flex-col items-end gap-2">
-            {tipo !== 'rap' && tipo !== 'empenhos' && (
+            {tipo === 'desconhecido' && (
               <p className="text-xs text-amber-600">
-                A gravação no banco está habilitada para RAP e Empenhos.
+                Esta planilha ainda não está habilitada para gravação.
               </p>
             )}
 
             <button
               type="button"
-              onClick={() => void confirmarImportacao()}
+              onClick={() =>
+                void confirmarImportacao()
+              }
               disabled={
                 importando ||
-                (tipo !== 'rap' && tipo !== 'empenhos') ||
+                (
+                  tipo !== 'rap' &&
+                  tipo !== 'empenhos' &&
+                  tipo !==
+                    'credito_orcamentario'
+                ) ||
                 !linhas.length
               }
               className="inline-flex items-center gap-2 rounded-xl bg-[#002B49] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#003d66] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
