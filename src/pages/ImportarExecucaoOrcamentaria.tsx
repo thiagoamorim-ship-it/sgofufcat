@@ -17,6 +17,13 @@ type TipoBase =
 
 type Linha = Record<string, unknown>;
 
+type ResultadoLeitura = {
+  tipo: TipoBase;
+  colunas: string[];
+  linhas: Linha[];
+  linhaInicialDados: number;
+};
+
 function texto(valor: unknown) {
   return String(valor ?? '')
     .trim()
@@ -30,42 +37,67 @@ function normalizar(valor: unknown) {
     .toLowerCase();
 }
 
-function detectarTipo(colunas: string[]): TipoBase {
-  const cabecalho = colunas.map(normalizar);
+function linhaContem(
+  linha: unknown[],
+  termo: string,
+) {
+  const procurado = normalizar(termo);
 
-  const possui = (...termos: string[]) =>
-    termos.every((termo) =>
-      cabecalho.some((coluna) =>
-        coluna.includes(normalizar(termo)),
-      ),
-    );
+  return linha.some((celula) =>
+    normalizar(celula).includes(procurado),
+  );
+}
 
-  // Empenhos
+function detectarTipoPorMatriz(
+  matriz: unknown[][],
+): TipoBase {
+  const primeirasLinhas = matriz.slice(0, 15);
+
+  const conteudo = primeirasLinhas
+    .flat()
+    .map(normalizar)
+    .join(' | ');
+
+  /*
+   * EMPENHOS
+   *
+   * Nos relatórios do Tesouro os estágios podem
+   * aparecer em linhas diferentes do cabeçalho.
+   */
   if (
-    possui('ne ccor') &&
-    possui('empenhos a liquidar') &&
-    possui('empenhos pagos')
+    conteudo.includes('ne ccor') &&
+    conteudo.includes('empenhos a liquidar') &&
+    conteudo.includes('empenhos pagos')
   ) {
     return 'empenhos';
   }
 
-  // RAP
+  /*
+   * CRÉDITO ORÇAMENTÁRIO
+   */
   if (
-    possui('ne ccor') &&
-    possui('conta contabil') &&
-    possui('saldo')
-  ) {
-    return 'rap';
-  }
-
-  // Crédito / Disponibilidade Orçamentária
-  if (
-    possui('ug executora') &&
-    possui('acao governo') &&
-    possui('nc - operacao') &&
-    possui('saldo')
+    conteudo.includes('ug executora') &&
+    conteudo.includes('acao governo') &&
+    (
+      conteudo.includes('nc - operacao') ||
+      conteudo.includes('nc operacao')
+    )
   ) {
     return 'credito_orcamentario';
+  }
+
+  /*
+   * RAP
+   *
+   * Verificamos depois de Empenhos porque ambos
+   * podem possuir NE CCOR e Conta Contábil.
+   */
+  if (
+    conteudo.includes('ne ccor') &&
+    conteudo.includes('conta contabil') &&
+    conteudo.includes('saldo')
+  ) {
+    return 'rap';
   }
 
   return 'desconhecido';
@@ -85,6 +117,378 @@ function nomeTipo(tipo: TipoBase) {
     default:
       return 'Não reconhecida';
   }
+}
+
+/*
+ * Converte uma matriz do Excel em objetos.
+ *
+ * O Tesouro Gerencial pode exportar relatórios
+ * com duas ou três linhas compondo o cabeçalho.
+ * Por isso não podemos usar diretamente a primeira
+ * linha como nome das colunas.
+ */
+function processarMatriz(
+  matrizOriginal: unknown[][],
+): ResultadoLeitura {
+  const matriz = matrizOriginal.map((linha) =>
+    Array.isArray(linha) ? linha : [],
+  );
+
+  const tipo =
+    detectarTipoPorMatriz(matriz);
+
+  if (!matriz.length) {
+    return {
+      tipo: 'desconhecido',
+      colunas: [],
+      linhas: [],
+      linhaInicialDados: 0,
+    };
+  }
+
+  /*
+   * EMPENHOS
+   *
+   * Procuramos a linha onde aparecem os códigos
+   * das contas dos quatro estágios:
+   *
+   * 622920101
+   * 622920102
+   * 622920103
+   * 622920104
+   *
+   * e a linha seguinte onde aparecem os nomes:
+   *
+   * EMPENHOS A LIQUIDAR
+   * EMPENHOS EM LIQUIDAÇÃO
+   * EMPENHOS LIQUIDADOS A PAGAR
+   * EMPENHOS PAGOS
+   */
+  if (tipo === 'empenhos') {
+    let linhaCodigos = -1;
+    let linhaNomes = -1;
+    let linhaSaldo = -1;
+
+    for (
+      let indice = 0;
+      indice < Math.min(matriz.length, 15);
+      indice += 1
+    ) {
+      const linha = matriz[indice];
+
+      if (
+        linhaContem(linha, '622920101') ||
+        linhaContem(
+          linha,
+          'empenhos a liquidar',
+        )
+      ) {
+        if (
+          linhaContem(linha, '622920101')
+        ) {
+          linhaCodigos = indice;
+        }
+
+        if (
+          linhaContem(
+            linha,
+            'empenhos a liquidar',
+          )
+        ) {
+          linhaNomes = indice;
+        }
+      }
+
+      if (
+        linhaContem(
+          linha,
+          'saldo - r$',
+        )
+      ) {
+        linhaSaldo = indice;
+      }
+    }
+
+    /*
+     * Pelo padrão do Tesouro, a primeira linha
+     * contém os nomes das dimensões e as linhas
+     * seguintes complementam as colunas contábeis.
+     */
+    const linhaBase = matriz[0] || [];
+
+    const maiorQuantidadeColunas =
+      Math.max(
+        linhaBase.length,
+        ...matriz
+          .slice(0, 10)
+          .map((linha) => linha.length),
+      );
+
+    const colunas: string[] = [];
+
+    for (
+      let coluna = 0;
+      coluna < maiorQuantidadeColunas;
+      coluna += 1
+    ) {
+      const base =
+        texto(linhaBase[coluna]);
+
+      const codigo =
+        linhaCodigos >= 0
+          ? texto(
+              matriz[linhaCodigos]?.[
+                coluna
+              ],
+            )
+          : '';
+
+      const nome =
+        linhaNomes >= 0
+          ? texto(
+              matriz[linhaNomes]?.[
+                coluna
+              ],
+            )
+          : '';
+
+      let nomeFinal = base;
+
+      /*
+       * Identificação explícita das quatro
+       * contas de execução.
+       */
+      if (
+        codigo.includes('622920101') ||
+        normalizar(nome).includes(
+          'empenhos a liquidar',
+        )
+      ) {
+        nomeFinal = 'Empenhos a Liquidar';
+      } else if (
+        codigo.includes('622920102') ||
+        normalizar(nome).includes(
+          'empenhos em liquidacao',
+        )
+      ) {
+        nomeFinal = 'Empenhos em Liquidação';
+      } else if (
+        codigo.includes('622920103') ||
+        normalizar(nome).includes(
+          'empenhos liquidados a pagar',
+        )
+      ) {
+        nomeFinal =
+          'Empenhos Liquidados a Pagar';
+      } else if (
+        codigo.includes('622920104') ||
+        normalizar(nome).includes(
+          'empenhos pagos',
+        )
+      ) {
+        nomeFinal = 'Empenhos Pagos';
+      }
+
+      /*
+       * Se a primeira linha estiver vazia,
+       * tentamos aproveitar informações das
+       * linhas complementares.
+       */
+      if (!nomeFinal) {
+        nomeFinal =
+          nome ||
+          codigo ||
+          `Coluna ${coluna + 1}`;
+      }
+
+      /*
+       * Evita nomes repetidos.
+       */
+      let nomeUnico = nomeFinal;
+      let contador = 2;
+
+      while (
+        colunas.includes(nomeUnico)
+      ) {
+        nomeUnico =
+          `${nomeFinal} (${contador})`;
+
+        contador += 1;
+      }
+
+      colunas.push(nomeUnico);
+    }
+
+    /*
+     * Os dados começam depois da última linha
+     * estrutural encontrada.
+     */
+    const ultimaLinhaCabecalho =
+      Math.max(
+        0,
+        linhaCodigos,
+        linhaNomes,
+        linhaSaldo,
+      );
+
+    const linhaInicialDados =
+      ultimaLinhaCabecalho + 1;
+
+    const linhas: Linha[] = [];
+
+    for (
+      let indice = linhaInicialDados;
+      indice < matriz.length;
+      indice += 1
+    ) {
+      const linha = matriz[indice];
+
+      if (
+        !linha ||
+        !linha.some(
+          (celula) =>
+            texto(celula) !== '',
+        )
+      ) {
+        continue;
+      }
+
+      const registro: Linha = {};
+
+      colunas.forEach(
+        (coluna, indiceColuna) => {
+          registro[coluna] =
+            linha[indiceColuna] ?? '';
+        },
+      );
+
+      linhas.push(registro);
+    }
+
+    return {
+      tipo,
+      colunas,
+      linhas,
+      linhaInicialDados,
+    };
+  }
+
+  /*
+   * RAP e CRÉDITO ORÇAMENTÁRIO
+   *
+   * Nesses relatórios procuramos a linha com
+   * maior quantidade de campos textuais
+   * reconhecíveis nas primeiras linhas.
+   */
+  let melhorLinha = 0;
+  let melhorPontuacao = -1;
+
+  const termosConhecidos = [
+    'ne ccor',
+    'favorecido',
+    'natureza despesa',
+    'ptres',
+    'fonte recursos',
+    'pi',
+    'conta contabil',
+    'saldo',
+    'ug executora',
+    'acao governo',
+    'nc - operacao',
+    'evento',
+    'plano orcamentario',
+  ];
+
+  for (
+    let indice = 0;
+    indice < Math.min(matriz.length, 15);
+    indice += 1
+  ) {
+    const linhaNormalizada =
+      matriz[indice]
+        .map(normalizar)
+        .join(' | ');
+
+    const pontuacao =
+      termosConhecidos.filter((termo) =>
+        linhaNormalizada.includes(
+          normalizar(termo),
+        ),
+      ).length;
+
+    if (pontuacao > melhorPontuacao) {
+      melhorPontuacao = pontuacao;
+      melhorLinha = indice;
+    }
+  }
+
+  const cabecalho =
+    matriz[melhorLinha] || [];
+
+  const colunas: string[] = [];
+
+  cabecalho.forEach(
+    (celula, indice) => {
+      const base =
+        texto(celula) ||
+        `Coluna ${indice + 1}`;
+
+      let nomeUnico = base;
+      let contador = 2;
+
+      while (
+        colunas.includes(nomeUnico)
+      ) {
+        nomeUnico =
+          `${base} (${contador})`;
+
+        contador += 1;
+      }
+
+      colunas.push(nomeUnico);
+    },
+  );
+
+  const linhaInicialDados =
+    melhorLinha + 1;
+
+  const linhas: Linha[] = [];
+
+  for (
+    let indice = linhaInicialDados;
+    indice < matriz.length;
+    indice += 1
+  ) {
+    const linha = matriz[indice];
+
+    if (
+      !linha ||
+      !linha.some(
+        (celula) =>
+          texto(celula) !== '',
+      )
+    ) {
+      continue;
+    }
+
+    const registro: Linha = {};
+
+    colunas.forEach(
+      (coluna, indiceColuna) => {
+        registro[coluna] =
+          linha[indiceColuna] ?? '';
+      },
+    );
+
+    linhas.push(registro);
+  }
+
+  return {
+    tipo,
+    colunas,
+    linhas,
+    linhaInicialDados,
+  };
 }
 
 export default function ImportarExecucaoOrcamentaria() {
@@ -150,73 +554,116 @@ export default function ImportarExecucaoOrcamentaria() {
         );
       }
 
-      /*
-       * Para os relatórios do Tesouro,
-       * procuramos automaticamente a primeira aba
-       * que contenha dados reconhecíveis.
-       */
       let abaEncontrada = '';
-      let linhasEncontradas: Linha[] = [];
-      let colunasEncontradas: string[] = [];
-      let tipoEncontrado: TipoBase =
-        'desconhecido';
+      let resultadoEncontrado:
+        | ResultadoLeitura
+        | null = null;
 
-      for (const nomeAba of workbook.SheetNames) {
+      let primeiraAbaComDados:
+        | {
+            nome: string;
+            resultado: ResultadoLeitura;
+          }
+        | null = null;
+
+      for (
+        const nomeAba of workbook.SheetNames
+      ) {
         const worksheet =
           workbook.Sheets[nomeAba];
 
-        if (!worksheet) continue;
-
-        const dados =
-          XLSX.utils.sheet_to_json<Linha>(
-            worksheet,
-            {
-              defval: '',
-              raw: false,
-            },
-          );
-
-        if (!dados.length) continue;
-
-        const primeirasColunas =
-          Object.keys(dados[0] || {});
-
-        const tipoAba =
-          detectarTipo(primeirasColunas);
-
-        if (tipoAba !== 'desconhecido') {
-          abaEncontrada = nomeAba;
-          linhasEncontradas = dados;
-          colunasEncontradas =
-            primeirasColunas;
-          tipoEncontrado = tipoAba;
-          break;
+        if (!worksheet) {
+          continue;
         }
 
         /*
-         * Guarda a primeira aba com dados para
-         * permitir diagnóstico caso nenhuma
-         * estrutura seja reconhecida.
+         * header: 1 é essencial:
+         * queremos primeiro a matriz bruta,
+         * sem deixar a biblioteca decidir
+         * sozinha qual linha é o cabeçalho.
          */
-        if (!linhasEncontradas.length) {
+        const matriz =
+          XLSX.utils.sheet_to_json<
+            unknown[]
+          >(worksheet, {
+            header: 1,
+            defval: '',
+            raw: false,
+          });
+
+        if (!matriz.length) {
+          continue;
+        }
+
+        const resultado =
+          processarMatriz(matriz);
+
+        if (
+          resultado.linhas.length &&
+          !primeiraAbaComDados
+        ) {
+          primeiraAbaComDados = {
+            nome: nomeAba,
+            resultado,
+          };
+        }
+
+        if (
+          resultado.tipo !==
+            'desconhecido' &&
+          resultado.linhas.length
+        ) {
           abaEncontrada = nomeAba;
-          linhasEncontradas = dados;
-          colunasEncontradas =
-            primeirasColunas;
+          resultadoEncontrado =
+            resultado;
+          break;
         }
       }
 
-      if (!linhasEncontradas.length) {
+      /*
+       * Caso nenhuma aba tenha sido reconhecida,
+       * ainda mostramos a primeira aba com dados
+       * para facilitar o diagnóstico.
+       */
+      if (
+        !resultadoEncontrado &&
+        primeiraAbaComDados
+      ) {
+        abaEncontrada =
+          primeiraAbaComDados.nome;
+
+        resultadoEncontrado =
+          primeiraAbaComDados.resultado;
+      }
+
+      if (
+        !resultadoEncontrado ||
+        !resultadoEncontrado.linhas.length
+      ) {
         throw new Error(
-          'Não foram encontrados registros na planilha.',
+          'Não foram encontrados registros válidos na planilha.',
         );
       }
 
-      setArquivo(arquivoSelecionado);
-      setPlanilha(abaEncontrada);
-      setLinhas(linhasEncontradas);
-      setColunas(colunasEncontradas);
-      setTipo(tipoEncontrado);
+      setArquivo(
+        arquivoSelecionado,
+      );
+
+      setPlanilha(
+        abaEncontrada,
+      );
+
+      setLinhas(
+        resultadoEncontrado.linhas,
+      );
+
+      setColunas(
+        resultadoEncontrado.colunas,
+      );
+
+      setTipo(
+        resultadoEncontrado.tipo,
+      );
     } catch (error: any) {
       console.error(error);
 
@@ -246,6 +693,8 @@ export default function ImportarExecucaoOrcamentaria() {
 
   return (
     <div className="space-y-6">
+
+      {/* Cabeçalho */}
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
           <div>
@@ -271,6 +720,7 @@ export default function ImportarExecucaoOrcamentaria() {
         </div>
       </section>
 
+      {/* Erro */}
       {erro && (
         <div className="flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <AlertCircle
@@ -290,6 +740,7 @@ export default function ImportarExecucaoOrcamentaria() {
         </div>
       )}
 
+      {/* Seleção */}
       {!arquivo ? (
         <section className="rounded-3xl border-2 border-dashed border-slate-300 bg-white p-8 text-center shadow-sm md:p-14">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
@@ -313,7 +764,9 @@ export default function ImportarExecucaoOrcamentaria() {
                 className="animate-spin"
               />
             ) : (
-              <FileSpreadsheet size={18} />
+              <FileSpreadsheet
+                size={18}
+              />
             )}
 
             {carregando
@@ -335,13 +788,15 @@ export default function ImportarExecucaoOrcamentaria() {
                   );
                 }
 
-                event.currentTarget.value = '';
+                event.currentTarget.value =
+                  '';
               }}
             />
           </label>
         </section>
       ) : (
         <>
+          {/* Resumo */}
           <section className="grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -376,6 +831,7 @@ export default function ImportarExecucaoOrcamentaria() {
             </div>
           </section>
 
+          {/* Resultado */}
           <section
             className={`rounded-2xl border p-5 ${
               tipo === 'desconhecido'
@@ -399,19 +855,22 @@ export default function ImportarExecucaoOrcamentaria() {
               <div>
                 <p
                   className={`font-bold ${
-                    tipo === 'desconhecido'
+                    tipo ===
+                    'desconhecido'
                       ? 'text-amber-900'
                       : 'text-emerald-900'
                   }`}
                 >
-                  {tipo === 'desconhecido'
+                  {tipo ===
+                  'desconhecido'
                     ? 'Estrutura ainda não reconhecida'
                     : 'Planilha reconhecida'}
                 </p>
 
                 <p
                   className={`mt-1 text-sm ${
-                    tipo === 'desconhecido'
+                    tipo ===
+                    'desconhecido'
                       ? 'text-amber-700'
                       : 'text-emerald-700'
                   }`}
@@ -425,6 +884,7 @@ export default function ImportarExecucaoOrcamentaria() {
             </div>
           </section>
 
+          {/* Prévia */}
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex flex-col justify-between gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center">
               <div>
@@ -434,8 +894,8 @@ export default function ImportarExecucaoOrcamentaria() {
 
                 <p className="mt-1 text-xs text-slate-500">
                   Primeiros 5 registros •{' '}
-                  {colunas.length} coluna(s)
-                  identificada(s)
+                  {colunas.length}{' '}
+                  coluna(s) identificada(s)
                 </p>
               </div>
 
@@ -453,14 +913,16 @@ export default function ImportarExecucaoOrcamentaria() {
               <table className="min-w-max divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
-                    {colunas.map((coluna) => (
-                      <th
-                        key={coluna}
-                        className="max-w-[240px] whitespace-nowrap px-4 py-3 text-left text-xs font-semibold text-slate-500"
-                      >
-                        {coluna}
-                      </th>
-                    ))}
+                    {colunas.map(
+                      (coluna) => (
+                        <th
+                          key={coluna}
+                          className="max-w-[260px] whitespace-nowrap px-4 py-3 text-left text-xs font-semibold text-slate-500"
+                        >
+                          {coluna}
+                        </th>
+                      ),
+                    )}
                   </tr>
                 </thead>
 
@@ -472,7 +934,7 @@ export default function ImportarExecucaoOrcamentaria() {
                           (coluna) => (
                             <td
                               key={coluna}
-                              className="max-w-[240px] truncate whitespace-nowrap px-4 py-3 text-xs text-slate-600"
+                              className="max-w-[260px] truncate whitespace-nowrap px-4 py-3 text-xs text-slate-600"
                               title={texto(
                                 linha[coluna],
                               )}
@@ -491,6 +953,7 @@ export default function ImportarExecucaoOrcamentaria() {
             </div>
           </section>
 
+          {/* Confirmação */}
           <div className="flex justify-end">
             <button
               type="button"
