@@ -36,6 +36,7 @@ import Checklist from './pages/Checklist';
 import DisponibilidadeOrcamentaria from './pages/DisponibilidadeOrcamentaria';
 import Empenho from './pages/Empenho';
 import Usuarios from './pages/Usuarios';
+import ExecucaoOrcamentaria from './pages/ExecucaoOrcamentaria';
 
 function LoadingScreen() {
   return (
@@ -202,6 +203,12 @@ export default function App() {
                   <Route
                     path="/"
                     element={<Dashboard />}
+                  />
+
+                  {/* Execução Orçamentária / BI */}
+                  <Route
+                    path="/execucao-orcamentaria"
+                    element={<ExecucaoOrcamentaria />}
                   />
 
                   <Route
