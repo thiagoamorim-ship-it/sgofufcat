@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Landmark,
   Users,
+  ChartNoAxesCombined,
 } from 'lucide-react';
 
 import { useLocation } from 'react-router-dom';
@@ -29,6 +30,11 @@ const menuItems = [
     label: 'Visão Geral',
     icon: LayoutDashboard,
     path: '/',
+  },
+  {
+    label: 'Execução Orçamentária',
+    icon: ChartNoAxesCombined,
+    path: '/execucao-orcamentaria',
   },
   {
     label: 'Notas Fiscais',
