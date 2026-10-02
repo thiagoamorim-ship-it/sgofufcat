@@ -74,9 +74,7 @@ function obterCampo(
 ) {
   const entradas = Object.entries(linha);
 
-  /*
-   * Primeiro procura correspondência exata.
-   */
+  // Primeiro procura correspondência exata.
   for (const alternativa of alternativas) {
     const procurado = normalizar(alternativa);
 
@@ -90,10 +88,7 @@ function obterCampo(
     }
   }
 
-  /*
-   * Depois aceita cabeçalhos semelhantes,
-   * inclusive os gerados pelo parser com (2).
-   */
+  // Depois aceita cabeçalhos semelhantes.
   for (const alternativa of alternativas) {
     const procurado = normalizar(alternativa);
 
@@ -448,6 +443,274 @@ function mapearEmpenho(linha: Linha) {
 
 /*
  * =====================================================
+ * CRÉDITO ORÇAMENTÁRIO
+ * =====================================================
+ *
+ * Base validada:
+ * HU-UFCAT - Tabela crédito disponível.xlsx
+ *
+ * Aba:
+ * Crédito Disponível - Gestão
+ *
+ * 36 colunas.
+ * =====================================================
+ */
+
+function mapearCreditoOrcamentario(
+  linha: Linha,
+) {
+  return {
+    emissao_dia: texto(
+      obterCampo(linha, [
+        'Emissão - Dia',
+        'Emissao - Dia',
+      ]),
+    ),
+
+    ug_executora_codigo: texto(
+      obterCampo(linha, [
+        'UG Executora Código',
+        'UG Executora Codigo',
+      ]),
+    ),
+
+    ug_executora_nome: texto(
+      obterCampo(linha, [
+        'UG Executora Nome',
+      ]),
+    ),
+
+    conta_corrente: texto(
+      obterCampo(linha, [
+        'Conta Corrente',
+      ]),
+    ),
+
+    acao_governo_codigo: texto(
+      obterCampo(linha, [
+        'Ação Governo Código',
+        'Acao Governo Codigo',
+      ]),
+    ),
+
+    acao_governo_nome: texto(
+      obterCampo(linha, [
+        'Ação Governo Nome',
+        'Acao Governo Nome',
+      ]),
+    ),
+
+    fonte_recursos_detalhada_codigo:
+      texto(
+        obterCampo(linha, [
+          'Fonte Recursos Detalhada Código',
+          'Fonte Recursos Detalhada Codigo',
+        ]),
+      ),
+
+    fonte_recursos_detalhada_nome:
+      texto(
+        obterCampo(linha, [
+          'Fonte Recursos Detalhada Nome',
+        ]),
+      ),
+
+    ug_responsavel_codigo: texto(
+      obterCampo(linha, [
+        'UG Responsável Código',
+        'UG Responsavel Codigo',
+      ]),
+    ),
+
+    ug_responsavel_nome: texto(
+      obterCampo(linha, [
+        'UG Responsável Nome',
+        'UG Responsavel Nome',
+      ]),
+    ),
+
+    pi_codigo: texto(
+      obterCampo(linha, [
+        'PI Código PI',
+        'PI Codigo PI',
+        'PI Código',
+        'PI Codigo',
+      ]),
+    ),
+
+    pi_nome: texto(
+      obterCampo(linha, [
+        'PI Nome',
+      ]),
+    ),
+
+    natureza_despesa_codigo: texto(
+      obterCampo(linha, [
+        'Natureza Despesa Código',
+        'Natureza Despesa Codigo',
+      ]),
+    ),
+
+    natureza_despesa_nome: texto(
+      obterCampo(linha, [
+        'Natureza Despesa Nome',
+      ]),
+    ),
+
+    nc_operacao_tipo: texto(
+      obterCampo(linha, [
+        'NC - Operação (Tipo)',
+        'NC - Operacao (Tipo)',
+      ]),
+    ),
+
+    nc_tipo_descentralizacao: texto(
+      obterCampo(linha, [
+        'NC - Tipo Descentralização',
+        'NC - Tipo Descentralizacao',
+      ]),
+    ),
+
+    evento_codigo: texto(
+      obterCampo(linha, [
+        'Evento Código',
+        'Evento Codigo',
+      ]),
+    ),
+
+    evento_nome: texto(
+      obterCampo(linha, [
+        'Evento Nome',
+      ]),
+    ),
+
+    doc_tipo_codigo: texto(
+      obterCampo(linha, [
+        'Doc - Tipo Código',
+        'Doc - Tipo Codigo',
+      ]),
+    ),
+
+    doc_tipo_nome: texto(
+      obterCampo(linha, [
+        'Doc - Tipo Nome',
+      ]),
+    ),
+
+    plano_orcamentario_codigo_uo:
+      texto(
+        obterCampo(linha, [
+          'Plano Orçamentário Código UO',
+          'Plano Orcamentario Codigo UO',
+        ]),
+      ),
+
+    plano_orcamentario_codigo_funcao:
+      texto(
+        obterCampo(linha, [
+          'Plano Orçamentário Código Função',
+          'Plano Orcamentario Codigo Funcao',
+        ]),
+      ),
+
+    plano_orcamentario_codigo_subfuncao:
+      texto(
+        obterCampo(linha, [
+          'Plano Orçamentário Código Subfunção',
+          'Plano Orcamentario Codigo Subfuncao',
+        ]),
+      ),
+
+    plano_orcamentario_codigo_programa:
+      texto(
+        obterCampo(linha, [
+          'Plano Orçamentário Código Programa',
+          'Plano Orcamentario Codigo Programa',
+        ]),
+      ),
+
+    plano_orcamentario_codigo_po:
+      texto(
+        obterCampo(linha, [
+          'Plano Orçamentário Código PO',
+          'Plano Orcamentario Codigo PO',
+        ]),
+      ),
+
+    plano_orcamentario_nome: texto(
+      obterCampo(linha, [
+        'Plano Orçamentário Nome',
+        'Plano Orcamentario Nome',
+      ]),
+    ),
+
+    resultado_primario_lei_codigo:
+      texto(
+        obterCampo(linha, [
+          'Resultado Primário Lei Código',
+          'Resultado Primario Lei Codigo',
+        ]),
+      ),
+
+    resultado_primario_lei_nome:
+      texto(
+        obterCampo(linha, [
+          'Resultado Primário Lei Nome',
+          'Resultado Primario Lei Nome',
+        ]),
+      ),
+
+    ptres: texto(
+      obterCampo(linha, [
+        'PTRES',
+      ]),
+    ),
+
+    uf_pt_sigla: texto(
+      obterCampo(linha, [
+        'UF PT Sigla',
+      ]),
+    ),
+
+    uf_pt_nome: texto(
+      obterCampo(linha, [
+        'UF PT Nome',
+      ]),
+    ),
+
+    localizador_gasto_codigo_completo:
+      texto(
+        obterCampo(linha, [
+          'Localizador Gasto Código Completo',
+          'Localizador Gasto Codigo Completo',
+        ]),
+      ),
+
+    localizador_gasto_nome: texto(
+      obterCampo(linha, [
+        'Localizador Gasto Nome',
+      ]),
+    ),
+
+    gera_cota_stn: texto(
+      obterCampo(linha, [
+        'Gera Cota STN (S/N)',
+        'Gera Cota STN',
+      ]),
+    ),
+
+    saldo_contabil: numero(
+      obterCampo(linha, [
+        'Saldo - R$ (Conta Contábil)',
+        'Saldo - R$ (Conta Contabil)',
+        'Saldo',
+      ]),
+    ),
+  };
+}
+
+/*
+ * =====================================================
  * AUTENTICAÇÃO
  * =====================================================
  */
@@ -578,16 +841,18 @@ export default async function handler(
         : [];
 
     /*
-     * Por enquanto:
-     * RAP + EMPENHOS.
+     * Bases habilitadas.
      */
-    if (
-      tipo !== 'rap' &&
-      tipo !== 'empenhos'
-    ) {
+    const tiposPermitidos = [
+      'rap',
+      'empenhos',
+      'credito_orcamentario',
+    ];
+
+    if (!tiposPermitidos.includes(tipo)) {
       return responder(res, 400, {
         error:
-          'Nesta etapa, a gravação está habilitada para RAP e Empenhos.',
+          'Tipo de base não habilitado para importação.',
       });
     }
 
@@ -613,52 +878,108 @@ export default async function handler(
     }
 
     /*
-     * Mapeamento de acordo com a base.
+     * =================================================
+     * MAPEAMENTO
+     * =================================================
      */
-    const registros =
-      tipo === 'rap'
-        ? linhas
-            .map(mapearRap)
-            .filter(
-              (registro) =>
-                registro.ne_ccor &&
-                /NE\d+/i.test(
-                  registro.ne_ccor.replace(
-                    /\s/g,
-                    '',
-                  ),
-                ),
-            )
-        : linhas
-            .map(mapearEmpenho)
-            .filter(
-              (registro) =>
-                registro.ne_ccor &&
-                /NE\d+/i.test(
-                  registro.ne_ccor.replace(
-                    /\s/g,
-                    '',
-                  ),
-                ),
-            );
+
+    let registros: Record<string, unknown>[] =
+      [];
+
+    let tabelaDestino = '';
+
+    if (tipo === 'rap') {
+      registros = linhas
+        .map(mapearRap)
+        .filter(
+          (registro) =>
+            registro.ne_ccor &&
+            /NE\d+/i.test(
+              String(
+                registro.ne_ccor,
+              ).replace(/\s/g, ''),
+            ),
+        );
+
+      tabelaDestino = 'bi_rap';
+    }
+
+    if (tipo === 'empenhos') {
+      registros = linhas
+        .map(mapearEmpenho)
+        .filter(
+          (registro) =>
+            registro.ne_ccor &&
+            /NE\d+/i.test(
+              String(
+                registro.ne_ccor,
+              ).replace(/\s/g, ''),
+            ),
+        );
+
+      tabelaDestino = 'bi_empenhos';
+    }
+
+    if (
+      tipo === 'credito_orcamentario'
+    ) {
+      registros = linhas
+        .map(mapearCreditoOrcamentario)
+        .filter((registro) => {
+          /*
+           * Uma linha de Crédito Orçamentário é
+           * considerada válida quando possui pelo
+           * menos uma identificação estrutural.
+           *
+           * Não filtramos pelo valor do saldo,
+           * porque movimentações zeradas também
+           * podem ser legítimas.
+           */
+          return Boolean(
+            registro.emissao_dia ||
+              registro.ug_executora_codigo ||
+              registro.conta_corrente ||
+              registro.ptres ||
+              registro.natureza_despesa_codigo,
+          );
+        });
+
+      tabelaDestino =
+        'bi_credito_orcamentario';
+    }
 
     if (!registros.length) {
+      let mensagem =
+        'Nenhum registro válido foi identificado.';
+
+      if (tipo === 'rap') {
+        mensagem =
+          'Nenhum registro válido de RAP foi identificado.';
+      }
+
+      if (tipo === 'empenhos') {
+        mensagem =
+          'Nenhum registro válido de Empenhos foi identificado.';
+      }
+
+      if (
+        tipo === 'credito_orcamentario'
+      ) {
+        mensagem =
+          'Nenhum registro válido de Crédito Orçamentário foi identificado.';
+      }
+
       return responder(res, 400, {
-        error:
-          tipo === 'rap'
-            ? 'Nenhum registro válido de RAP foi identificado.'
-            : 'Nenhum registro válido de Empenhos foi identificado.',
+        error: mensagem,
       });
     }
 
-    const tabelaDestino =
-      tipo === 'rap'
-        ? 'bi_rap'
-        : 'bi_empenhos';
-
     /*
-     * Cria o registro da carga.
+     * =================================================
+     * CRIAÇÃO DA CARGA
+     * =================================================
      */
+
     const {
       data: carga,
       error: cargaError,
@@ -692,10 +1013,13 @@ export default async function handler(
 
     const cargaId = carga.id;
 
+    /*
+     * =================================================
+     * GRAVAÇÃO
+     * =================================================
+     */
+
     try {
-      /*
-       * Inserção em lotes.
-       */
       const tamanhoLote = 500;
 
       for (
@@ -720,6 +1044,11 @@ export default async function handler(
           .insert(lote);
 
         if (insertError) {
+          console.error(
+            `Erro ao inserir em ${tabelaDestino}:`,
+            insertError,
+          );
+
           throw insertError;
         }
       }
@@ -743,16 +1072,36 @@ export default async function handler(
         throw finalizarError;
       }
 
+      /*
+       * Mensagem de sucesso.
+       */
+      let mensagemSucesso =
+        'Importação concluída com sucesso.';
+
+      if (tipo === 'rap') {
+        mensagemSucesso =
+          'Importação de RAP concluída com sucesso.';
+      }
+
+      if (tipo === 'empenhos') {
+        mensagemSucesso =
+          'Importação de Empenhos concluída com sucesso.';
+      }
+
+      if (
+        tipo === 'credito_orcamentario'
+      ) {
+        mensagemSucesso =
+          'Importação de Crédito Orçamentário concluída com sucesso.';
+      }
+
       return responder(res, 200, {
         success: true,
         cargaId,
         tipo,
         quantidade:
           registros.length,
-        message:
-          tipo === 'rap'
-            ? 'Importação de RAP concluída com sucesso.'
-            : 'Importação de Empenhos concluída com sucesso.',
+        message: mensagemSucesso,
       });
     } catch (importError: any) {
       console.error(
@@ -761,7 +1110,7 @@ export default async function handler(
       );
 
       /*
-       * Remove qualquer dado parcial.
+       * Remove qualquer registro parcial.
        */
       await supabase
         .from(tabelaDestino)
@@ -770,7 +1119,7 @@ export default async function handler(
 
       /*
        * Mantém a carga para auditoria,
-       * porém marcada como erro.
+       * marcada como erro.
        */
       await supabase
         .from('bi_cargas')
