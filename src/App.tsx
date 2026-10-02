@@ -37,6 +37,7 @@ import DisponibilidadeOrcamentaria from './pages/DisponibilidadeOrcamentaria';
 import Empenho from './pages/Empenho';
 import Usuarios from './pages/Usuarios';
 import ExecucaoOrcamentaria from './pages/ExecucaoOrcamentaria';
+import ImportarExecucaoOrcamentaria from './pages/ImportarExecucaoOrcamentaria';
 
 function LoadingScreen() {
   return (
@@ -207,8 +208,13 @@ export default function App() {
 
                   {/* Execução Orçamentária / BI */}
                   <Route
-                    path="/execucao-orcamentaria"
-                    element={<ExecucaoOrcamentaria />}
+                  path="/execucao-orcamentaria"
+                  element={<ExecucaoOrcamentaria />}
+                  />
+
+                  <Route
+                    path="/execucao-orcamentaria/importar"
+                    element={<ImportarExecucaoOrcamentaria />}
                   />
 
                   <Route
