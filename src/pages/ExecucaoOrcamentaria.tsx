@@ -18,6 +18,7 @@ import {
   Upload,
   Users,
   WalletCards,
+  X,
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
@@ -136,49 +137,43 @@ function MetricCard({
   subtitulo,
   icon: Icon,
   destaque = false,
+  onClick,
 }: {
   titulo: string;
   valor: number;
   subtitulo?: string;
   icon: React.ElementType;
   destaque?: boolean;
+  onClick?: () => void;
 }) {
-  return (
-    <div
-      className={`rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
-        destaque
-          ? "border-blue-200 bg-gradient-to-br from-blue-50 to-white"
-          : "border-slate-200 bg-white"
-      }`}
-    >
+  const conteudo = (
+    <>
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-slate-500">
-            {titulo}
-          </p>
-
-          <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-            {moeda(valor)}
-          </p>
+          <p className="text-sm font-medium text-slate-500">{titulo}</p>
+          <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{moeda(valor)}</p>
         </div>
-
-        <div
-          className={`rounded-xl p-3 ${
-            destaque
-              ? "bg-blue-100 text-blue-700"
-              : "bg-slate-100 text-slate-600"
-          }`}
-        >
+        <div className={`rounded-xl p-3 ${destaque ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"}`}>
           <Icon size={21} />
         </div>
       </div>
-
-      {subtitulo && (
-        <p className="text-xs leading-5 text-slate-500">
-          {subtitulo}
+      {subtitulo && <p className="text-xs leading-5 text-slate-500">{subtitulo}</p>}
+      {onClick && (
+        <p className="mt-3 flex items-center gap-1 text-xs font-semibold text-blue-700">
+          Ver composição e exportar <Download size={13} />
         </p>
       )}
-    </div>
+    </>
+  );
+
+  const classe = `w-full rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+    destaque ? "border-blue-200 bg-gradient-to-br from-blue-50 to-white" : "border-slate-200 bg-white"
+  } ${onClick ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-300" : ""}`;
+
+  return onClick ? (
+    <button type="button" onClick={onClick} className={classe}>{conteudo}</button>
+  ) : (
+    <div className={classe}>{conteudo}</div>
   );
 }
 
@@ -295,6 +290,12 @@ export default function ExecucaoOrcamentaria() {
 
   const [situacao, setSituacao] =
     useState("");
+
+  const [composicao, setComposicao] = useState<{
+    tipo: "credito" | "empenhado" | "a_liquidar" | "em_liquidacao" | "liquidado_pagar" | "pago" | "rap";
+    titulo: string;
+    total: number;
+  } | null>(null);
 
   async function carregarDados() {
     setCarregando(true);
@@ -527,7 +528,7 @@ export default function ExecucaoOrcamentaria() {
       const valorPago = numero(item.empenhos_pagos);
 
       if (situacao === "empenhado_nao_liquidado") {
-        return valorALiquidar > 0;
+        return valorALiquidar > 0 || valorEmLiquidacao > 0;
       }
 
       if (situacao === "em_liquidacao") {
@@ -890,6 +891,98 @@ export default function ExecucaoOrcamentaria() {
     );
   }
 
+  const linhasComposicao = useMemo(() => {
+    if (!composicao) return [] as Array<Record<string, string | number>>;
+
+    if (composicao.tipo === "credito") {
+      return creditoFiltrado
+        .filter((item) => numero(item.saldo_contabil) !== 0)
+        .map((item) => ({
+          PTRES: item.ptres || "",
+          Fonte: item.fonte_recursos_detalhada_codigo || "",
+          Natureza: item.natureza_despesa_codigo || "",
+          PI: item.pi_codigo || "",
+          Valor: numero(item.saldo_contabil),
+        }));
+    }
+
+    if (composicao.tipo === "rap") {
+      return rapFiltrado
+        .filter((item) => numero(item.saldo) !== 0)
+        .map((item) => ({
+          NE_CCOR: item.ne_ccor || "",
+          Favorecido: item.favorecido || "",
+          Processo: item.numero_processo || "",
+          PTRES: item.ptres || "",
+          Fonte: item.fonte_recursos_detalhada || "",
+          Natureza: item.natureza_despesa || "",
+          Natureza_Detalhada: item.natureza_despesa_detalhada || "",
+          PI: item.pi || "",
+          Descricao: item.descricao || "",
+          Valor: numero(item.saldo),
+        }));
+    }
+
+    return empenhosBaseFiltrados
+      .map((item) => {
+        const aLiquidar = numero(item.empenhos_a_liquidar);
+        const emLiquidacao = numero(item.empenhos_em_liquidacao);
+        const liquidadoPagar = numero(item.empenhos_liquidados_a_pagar);
+        const pago = numero(item.empenhos_pagos);
+        const total = aLiquidar + emLiquidacao + liquidadoPagar + pago;
+        const valor =
+          composicao.tipo === "a_liquidar" ? aLiquidar :
+          composicao.tipo === "em_liquidacao" ? emLiquidacao :
+          composicao.tipo === "liquidado_pagar" ? liquidadoPagar :
+          composicao.tipo === "pago" ? pago : total;
+
+        return {
+          NE_CCOR: item.ne_ccor || "",
+          CNPJ_CPF: item.favorecido_numero || "",
+          Favorecido: item.favorecido_nome || "",
+          Processo: item.numero_processo || "",
+          PTRES: item.ptres || "",
+          Fonte: item.fonte_recursos_detalhada_codigo || "",
+          Natureza: item.natureza_despesa_codigo || "",
+          Natureza_Descricao: item.natureza_despesa_nome || "",
+          PI: item.pi_codigo || "",
+          Descricao: item.descricao || "",
+          Valor: valor,
+        };
+      })
+      .filter((item) => Number(item.Valor) !== 0);
+  }, [composicao, creditoFiltrado, rapFiltrado, empenhosBaseFiltrados]);
+
+  function abrirComposicao(
+    tipo: "credito" | "empenhado" | "a_liquidar" | "em_liquidacao" | "liquidado_pagar" | "pago" | "rap",
+    titulo: string,
+    total: number,
+  ) {
+    setComposicao({ tipo, titulo, total });
+  }
+
+  function exportarComposicaoCSV() {
+    if (!composicao || !linhasComposicao.length) return;
+    const colunas = Object.keys(linhasComposicao[0]);
+    const escapar = (valor: unknown) => `"${String(valor ?? "").replace(/"/g, '""')}"`;
+    const csv = [
+      colunas.join(";"),
+      ...linhasComposicao.map((linha) => colunas.map((coluna) => escapar(linha[coluna])).join(";")),
+    ].join("\n");
+    baixarArquivo(`\uFEFF${csv}`, "text/csv;charset=utf-8;", `composicao-${composicao.tipo}-${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+
+  function exportarComposicaoExcel() {
+    if (!composicao || !linhasComposicao.length) return;
+    const colunas = Object.keys(linhasComposicao[0]);
+    const escaparHtml = (valor: unknown) => String(valor ?? "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const cabecalho = colunas.map((coluna) => `<th>${escaparHtml(coluna)}</th>`).join("");
+    const corpo = linhasComposicao.map((linha) => `<tr>${colunas.map((coluna) => `<td>${escaparHtml(linha[coluna])}</td>`).join("")}</tr>`).join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><h2>${escaparHtml(composicao.titulo)}</h2><p>Total: ${escaparHtml(moeda(composicao.total))}</p><table border="1"><thead><tr>${cabecalho}</tr></thead><tbody>${corpo}</tbody></table></body></html>`;
+    baixarArquivo(`\uFEFF${html}`, "application/vnd.ms-excel;charset=utf-8;", `composicao-${composicao.tipo}-${new Date().toISOString().slice(0, 10)}.xls`);
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
@@ -1184,6 +1277,7 @@ export default function ExecucaoOrcamentaria() {
             subtitulo="Saldo contábil conforme posição importada."
             icon={Landmark}
             destaque
+            onClick={() => abrirComposicao("credito", "Composição — Crédito / Saldo", indicadores.saldoCredito)}
           />
 
           <MetricCard
@@ -1194,6 +1288,7 @@ export default function ExecucaoOrcamentaria() {
             subtitulo="Total dos estágios da execução dos empenhos."
             icon={FileText}
             destaque
+            onClick={() => abrirComposicao("empenhado", "Composição — Empenhado", indicadores.empenhado)}
           />
 
           <MetricCard
@@ -1203,6 +1298,7 @@ export default function ExecucaoOrcamentaria() {
             }
             subtitulo="Empenhos ainda não liquidados."
             icon={WalletCards}
+            onClick={() => abrirComposicao("a_liquidar", "Composição — A Liquidar", indicadores.aLiquidar)}
           />
 
           <MetricCard
@@ -1212,6 +1308,7 @@ export default function ExecucaoOrcamentaria() {
             }
             subtitulo="Valores atualmente em processo de liquidação."
             icon={Clock3}
+            onClick={() => abrirComposicao("em_liquidacao", "Composição — Em Liquidação", indicadores.emLiquidacao)}
           />
 
           <MetricCard
@@ -1221,6 +1318,7 @@ export default function ExecucaoOrcamentaria() {
             }
             subtitulo="Obrigações liquidadas ainda pendentes de pagamento."
             icon={Banknote}
+            onClick={() => abrirComposicao("liquidado_pagar", "Composição — Liquidado a Pagar", indicadores.liquidadoPagar)}
           />
 
           <MetricCard
@@ -1230,6 +1328,7 @@ export default function ExecucaoOrcamentaria() {
             }
             subtitulo="Valores pagos dos empenhos carregados."
             icon={CheckCircle2}
+            onClick={() => abrirComposicao("pago", "Composição — Pago", indicadores.pago)}
           />
 
           <MetricCard
@@ -1239,6 +1338,7 @@ export default function ExecucaoOrcamentaria() {
             }
             subtitulo="Saldo de RAP conforme a base importada."
             icon={RefreshCw}
+            onClick={() => abrirComposicao("rap", "Composição — Restos a Pagar", indicadores.saldoRap)}
           />
         </section>
 
@@ -1610,6 +1710,64 @@ export default function ExecucaoOrcamentaria() {
             </div>
           )}
         </section>
+
+        {composicao && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" onMouseDown={() => setComposicao(null)}>
+            <div className="flex max-h-[90vh] w-full max-w-7xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
+              <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Memória de cálculo</p>
+                  <h2 className="mt-1 text-xl font-bold text-slate-900">{composicao.titulo}</h2>
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                    <span>{linhasComposicao.length} registro(s)</span>
+                    <span className="font-bold text-slate-900">Total: {moeda(composicao.total)}</span>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setComposicao(null)} className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Fechar">
+                  <X size={21} />
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-2 border-b border-slate-200 bg-slate-50 px-6 py-3">
+                <button type="button" onClick={exportarComposicaoCSV} disabled={!linhasComposicao.length} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                  <Download size={16} /> Exportar CSV
+                </button>
+                <button type="button" onClick={exportarComposicaoExcel} disabled={!linhasComposicao.length} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
+                  <FileSpreadsheet size={16} /> Exportar Excel
+                </button>
+                <span className="self-center text-xs text-slate-500">A soma da coluna Valor corresponde ao indicador selecionado.</span>
+              </div>
+
+              <div className="overflow-auto">
+                {linhasComposicao.length ? (
+                  <table className="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead className="sticky top-0 bg-slate-100">
+                      <tr>
+                        {Object.keys(linhasComposicao[0]).map((coluna) => (
+                          <th key={coluna} className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{coluna.replace(/_/g, " ")}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {linhasComposicao.map((linha, indice) => (
+                        <tr key={indice} className="hover:bg-slate-50">
+                          {Object.keys(linhasComposicao[0]).map((coluna) => (
+                            <td key={coluna} className={`max-w-[320px] whitespace-nowrap px-4 py-3 text-slate-700 ${coluna === "Valor" ? "text-right font-semibold text-slate-900" : ""}`}>
+                              {coluna === "Valor" ? moeda(Number(linha[coluna]) || 0) : String(linha[coluna] ?? "") || "—"}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-12 text-center text-sm text-slate-500">Não há registros para compor este indicador com os filtros atuais.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
