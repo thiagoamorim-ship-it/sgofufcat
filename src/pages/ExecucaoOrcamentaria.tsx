@@ -980,8 +980,8 @@ export default function ExecucaoOrcamentaria() {
   }
 
 
-  const linhasComposicao = useMemo(() => {
-    if (!composicao) return [] as Array<Record<string, string | number>>;
+  const linhasComposicao = useMemo<Array<Record<string, string | number>>>(() => {
+    if (!composicao) return [];
 
     if (composicao.tipo === "credito") {
       return creditoFiltrado
@@ -1059,7 +1059,7 @@ export default function ExecucaoOrcamentaria() {
     };
   }, [linhasComposicao]);
 
-  const linhasComposicaoFiltradas = useMemo(() => {
+  const linhasComposicaoFiltradas = useMemo<Array<Record<string, string | number>>>(() => {
     const termo = filtroComposicao.trim().toLowerCase();
 
     return linhasComposicao.filter((linha) => {
@@ -1083,8 +1083,8 @@ export default function ExecucaoOrcamentaria() {
     filtroComposicaoNatureza,
   ]);
 
-  const totalComposicaoFiltrada = useMemo(
-    () => linhasComposicaoFiltradas.reduce((total, linha) => total + numero(linha.Valor as number | string), 0),
+  const totalComposicaoFiltrada = useMemo<number>(
+    () => linhasComposicaoFiltradas.reduce<number>((total, linha) => total + numero(linha["Valor"] as number | string), 0),
     [linhasComposicaoFiltradas],
   );
 
