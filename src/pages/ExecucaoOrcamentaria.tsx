@@ -114,6 +114,32 @@ function moeda(valor: number) {
   }).format(valor);
 }
 
+function normalizarFiltro(valor: string | null | undefined) {
+  return String(valor || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function correspondeFiltro(
+  valor: string | null | undefined,
+  filtro: string,
+) {
+  if (!filtro) return true;
+
+  const valorNormalizado = normalizarFiltro(valor);
+  const filtroNormalizado = normalizarFiltro(filtro);
+
+  if (valorNormalizado === filtroNormalizado) return true;
+
+  // Algumas bases do Tesouro trazem o código junto da descrição.
+  // Ex.: "339030 - Material de Consumo".
+  const codigoValor = valorNormalizado.split(/\s*[-–—]\s*/)[0];
+  const codigoFiltro = filtroNormalizado.split(/\s*[-–—]\s*/)[0];
+
+  return Boolean(codigoValor && codigoFiltro && codigoValor === codigoFiltro);
+}
+
 function dataHora(valor?: string | null) {
   if (!valor) {
     return "Nenhuma carga realizada";
@@ -482,19 +508,19 @@ export default function ExecucaoOrcamentaria() {
     const termo = pesquisa.trim().toLowerCase();
 
     return empenhos.filter((item) => {
-      if (ptres && item.ptres !== ptres) return false;
+      if (!correspondeFiltro(item.ptres, ptres)) return false;
 
-      if (
-        fonte &&
-        item.fonte_recursos_detalhada_codigo !== fonte
-      ) {
+      if (!correspondeFiltro(
+        item.fonte_recursos_detalhada_codigo,
+        fonte,
+      )) {
         return false;
       }
 
-      if (
-        natureza &&
-        item.natureza_despesa_codigo !== natureza
-      ) {
+      if (!correspondeFiltro(
+        item.natureza_despesa_codigo,
+        natureza,
+      )) {
         return false;
       }
 
@@ -549,26 +575,21 @@ export default function ExecucaoOrcamentaria() {
 
   const creditoFiltrado = useMemo(() => {
     return credito.filter((item) => {
-      if (
-        ptres &&
-        item.ptres !== ptres
-      ) {
+      if (!correspondeFiltro(item.ptres, ptres)) {
         return false;
       }
 
-      if (
-        fonte &&
-        item.fonte_recursos_detalhada_codigo !==
-          fonte
-      ) {
+      if (!correspondeFiltro(
+        item.fonte_recursos_detalhada_codigo,
+        fonte,
+      )) {
         return false;
       }
 
-      if (
-        natureza &&
-        item.natureza_despesa_codigo !==
-          natureza
-      ) {
+      if (!correspondeFiltro(
+        item.natureza_despesa_codigo,
+        natureza,
+      )) {
         return false;
       }
 
@@ -586,26 +607,21 @@ export default function ExecucaoOrcamentaria() {
       pesquisa.trim().toLowerCase();
 
     return rap.filter((item) => {
-      if (
-        ptres &&
-        item.ptres !== ptres
-      ) {
+      if (!correspondeFiltro(item.ptres, ptres)) {
         return false;
       }
 
-      if (
-        fonte &&
-        item.fonte_recursos_detalhada !==
-          fonte
-      ) {
+      if (!correspondeFiltro(
+        item.fonte_recursos_detalhada,
+        fonte,
+      )) {
         return false;
       }
 
-      if (
-        natureza &&
-        item.natureza_despesa !==
-          natureza
-      ) {
+      if (!correspondeFiltro(
+        item.natureza_despesa,
+        natureza,
+      )) {
         return false;
       }
 
@@ -857,7 +873,7 @@ export default function ExecucaoOrcamentaria() {
     const formatarCSV = (valor: unknown) =>
       typeof valor === "number"
         ? valor.toLocaleString("pt-BR", {
-            useGrouping: false,
+            useGrouping: true,
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })
@@ -877,37 +893,87 @@ export default function ExecucaoOrcamentaria() {
     );
   }
 
+  function baixarExcelXml(
+    linhas: Array<Record<string, unknown>>,
+    titulo: string,
+    nomeArquivo: string,
+  ) {
+    if (!linhas.length) return;
+
+    const escaparXml = (valor: unknown) =>
+      String(valor ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+
+    const colunas = Object.keys(linhas[0]);
+
+    const cabecalho = colunas
+      .map(
+        (coluna) =>
+          `<Cell ss:StyleID="Cabecalho"><Data ss:Type="String">${escaparXml(coluna)}</Data></Cell>`,
+      )
+      .join("");
+
+    const corpo = linhas
+      .map((linha) => {
+        const celulas = colunas
+          .map((coluna) => {
+            const valor = linha[coluna];
+
+            if (typeof valor === "number" && Number.isFinite(valor)) {
+              // O valor permanece numérico para SOMA/fórmulas.
+              // O estilo força a exibição brasileira: 000.000,00.
+              return `<Cell ss:StyleID="NumeroBR"><Data ss:Type="Number">${valor}</Data></Cell>`;
+            }
+
+            return `<Cell><Data ss:Type="String">${escaparXml(valor)}</Data></Cell>`;
+          })
+          .join("");
+
+        return `<Row>${celulas}</Row>`;
+      })
+      .join("");
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Bottom"/><Font ss:FontName="Calibri" ss:Size="11"/></Style>
+  <Style ss:ID="Cabecalho"><Font ss:Bold="1"/><Interior ss:Color="#E2E8F0" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="NumeroBR"><NumberFormat ss:Format="#.##0,00"/></Style>
+ </Styles>
+ <Worksheet ss:Name="${escaparXml(titulo).slice(0, 31)}">
+  <Table>
+   <Row>${cabecalho}</Row>
+   ${corpo}
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+    baixarArquivo(
+      `\uFEFF${xml}`,
+      "application/vnd.ms-excel;charset=utf-8;",
+      nomeArquivo,
+    );
+  }
+
   function exportarExcel() {
     const linhas = linhasExportacao();
     if (!linhas.length) return;
 
-    const colunas = Object.keys(linhas[0]) as Array<keyof (typeof linhas)[number]>;
-    const escaparHtml = (valor: unknown) => String(valor ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-
-    const celulaExcel = (valor: unknown) => {
-      if (typeof valor === "number") {
-        return `<td style="mso-number-format:'0.00';">${valor.toFixed(2)}</td>`;
-      }
-      return `<td>${escaparHtml(valor)}</td>`;
-    };
-
-    const cabecalho = colunas.map((coluna) => `<th>${escaparHtml(coluna)}</th>`).join("");
-    const corpo = linhas.map((linha) =>
-      `<tr>${colunas.map((coluna) => celulaExcel(linha[coluna])).join("")}</tr>`,
-    ).join("");
-
-    const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body><table border="1"><thead><tr>${cabecalho}</tr></thead><tbody>${corpo}</tbody></table></body></html>`;
-
-    baixarArquivo(
-      `\uFEFF${html}`,
-      "application/vnd.ms-excel;charset=utf-8;",
+    baixarExcelXml(
+      linhas,
+      "Execução Orçamentária",
       `execucao-orcamentaria-${new Date().toISOString().slice(0, 10)}.xls`,
     );
   }
+
 
   const linhasComposicao = useMemo(() => {
     if (!composicao) return [] as Array<Record<string, string | number>>;
@@ -987,7 +1053,7 @@ export default function ExecucaoOrcamentaria() {
     const formatarCSV = (valor: unknown) =>
       typeof valor === "number"
         ? valor.toLocaleString("pt-BR", {
-            useGrouping: false,
+            useGrouping: true,
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })
@@ -1010,30 +1076,9 @@ export default function ExecucaoOrcamentaria() {
   function exportarComposicaoExcel() {
     if (!composicao || !linhasComposicao.length) return;
 
-    const colunas = Object.keys(linhasComposicao[0]);
-    const escaparHtml = (valor: unknown) => String(valor ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-
-    const celulaExcel = (valor: unknown) => {
-      if (typeof valor === "number") {
-        return `<td style="mso-number-format:'0.00';">${valor.toFixed(2)}</td>`;
-      }
-      return `<td>${escaparHtml(valor)}</td>`;
-    };
-
-    const cabecalho = colunas.map((coluna) => `<th>${escaparHtml(coluna)}</th>`).join("");
-    const corpo = linhasComposicao.map((linha) =>
-      `<tr>${colunas.map((coluna) => celulaExcel(linha[coluna])).join("")}</tr>`,
-    ).join("");
-
-    const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body><h2>${escaparHtml(composicao.titulo)}</h2><p>Total: ${escaparHtml(moeda(composicao.total))}</p><table border="1"><thead><tr>${cabecalho}</tr></thead><tbody>${corpo}</tbody></table></body></html>`;
-
-    baixarArquivo(
-      `\uFEFF${html}`,
-      "application/vnd.ms-excel;charset=utf-8;",
+    baixarExcelXml(
+      linhasComposicao,
+      composicao.titulo,
       `composicao-${composicao.tipo}-${new Date().toISOString().slice(0, 10)}.xls`,
     );
   }
