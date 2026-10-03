@@ -323,6 +323,11 @@ export default function ExecucaoOrcamentaria() {
     total: number;
   } | null>(null);
 
+  const [filtroComposicao, setFiltroComposicao] = useState("");
+  const [filtroComposicaoPtres, setFiltroComposicaoPtres] = useState("");
+  const [filtroComposicaoFonte, setFiltroComposicaoFonte] = useState("");
+  const [filtroComposicaoNatureza, setFiltroComposicaoNatureza] = useState("");
+
   async function carregarDados() {
     setCarregando(true);
     setErro(null);
@@ -1037,18 +1042,72 @@ export default function ExecucaoOrcamentaria() {
       .filter((item) => Number(item.Valor) !== 0);
   }, [composicao, creditoFiltrado, rapFiltrado, empenhosBaseFiltrados]);
 
+  const opcoesComposicao = useMemo(() => {
+    const unicos = (campo: string) =>
+      Array.from(
+        new Set(
+          linhasComposicao
+            .map((linha) => String(linha[campo] ?? "").trim())
+            .filter(Boolean),
+        ),
+      ).sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
+
+    return {
+      ptres: unicos("PTRES"),
+      fontes: unicos("Fonte"),
+      naturezas: unicos("Natureza"),
+    };
+  }, [linhasComposicao]);
+
+  const linhasComposicaoFiltradas = useMemo(() => {
+    const termo = filtroComposicao.trim().toLowerCase();
+
+    return linhasComposicao.filter((linha) => {
+      if (filtroComposicaoPtres && String(linha.PTRES ?? "") !== filtroComposicaoPtres) return false;
+      if (filtroComposicaoFonte && String(linha.Fonte ?? "") !== filtroComposicaoFonte) return false;
+      if (filtroComposicaoNatureza && String(linha.Natureza ?? "") !== filtroComposicaoNatureza) return false;
+      if (!termo) return true;
+
+      return Object.entries(linha)
+        .filter(([chave]) => chave !== "Valor")
+        .map(([, valor]) => String(valor ?? ""))
+        .join(" ")
+        .toLowerCase()
+        .includes(termo);
+    });
+  }, [
+    linhasComposicao,
+    filtroComposicao,
+    filtroComposicaoPtres,
+    filtroComposicaoFonte,
+    filtroComposicaoNatureza,
+  ]);
+
+  const totalComposicaoFiltrada = useMemo(
+    () => linhasComposicaoFiltradas.reduce((total, linha) => total + numero(linha.Valor as number | string), 0),
+    [linhasComposicaoFiltradas],
+  );
+
+  function limparFiltrosComposicao() {
+    setFiltroComposicao("");
+    setFiltroComposicaoPtres("");
+    setFiltroComposicaoFonte("");
+    setFiltroComposicaoNatureza("");
+  }
+
   function abrirComposicao(
     tipo: "credito" | "empenhado" | "a_liquidar" | "em_liquidacao" | "liquidado_pagar" | "pago" | "rap",
     titulo: string,
     total: number,
   ) {
+    limparFiltrosComposicao();
     setComposicao({ tipo, titulo, total });
   }
 
   function exportarComposicaoCSV() {
-    if (!composicao || !linhasComposicao.length) return;
+    if (!composicao || !linhasComposicaoFiltradas.length) return;
 
-    const colunas = Object.keys(linhasComposicao[0]);
+    const colunas = Object.keys(linhasComposicaoFiltradas[0]);
     const escaparTexto = (valor: unknown) => `"${String(valor ?? "").replace(/"/g, '""')}"`;
     const formatarCSV = (valor: unknown) =>
       typeof valor === "number"
@@ -1061,7 +1120,7 @@ export default function ExecucaoOrcamentaria() {
 
     const csv = [
       colunas.join(";"),
-      ...linhasComposicao.map((linha) =>
+      ...linhasComposicaoFiltradas.map((linha) =>
         colunas.map((coluna) => formatarCSV(linha[coluna])).join(";"),
       ),
     ].join("\n");
@@ -1074,10 +1133,10 @@ export default function ExecucaoOrcamentaria() {
   }
 
   function exportarComposicaoExcel() {
-    if (!composicao || !linhasComposicao.length) return;
+    if (!composicao || !linhasComposicaoFiltradas.length) return;
 
     baixarExcelXml(
-      linhasComposicao,
+      linhasComposicaoFiltradas,
       composicao.titulo,
       `composicao-${composicao.tipo}-${new Date().toISOString().slice(0, 10)}.xls`,
     );
@@ -1812,15 +1871,18 @@ export default function ExecucaoOrcamentaria() {
         </section>
 
         {composicao && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" onMouseDown={() => setComposicao(null)}>
-            <div className="flex max-h-[90vh] w-full max-w-7xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
-              <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-2 sm:p-4" onMouseDown={() => setComposicao(null)}>
+            <div className="flex max-h-[94vh] w-[98vw] max-w-[1800px] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
+              <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Memória de cálculo</p>
                   <h2 className="mt-1 text-xl font-bold text-slate-900">{composicao.titulo}</h2>
                   <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                    <span>{linhasComposicao.length} registro(s)</span>
-                    <span className="font-bold text-slate-900">Total: {moeda(composicao.total)}</span>
+                    <span>{linhasComposicaoFiltradas.length} de {linhasComposicao.length} registro(s)</span>
+                    <span className="font-bold text-slate-900">Total filtrado: {moeda(totalComposicaoFiltrada)}</span>
+                    {linhasComposicaoFiltradas.length !== linhasComposicao.length && (
+                      <span className="text-xs">Total original: {moeda(composicao.total)}</span>
+                    )}
                   </div>
                 </div>
                 <button type="button" onClick={() => setComposicao(null)} className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Fechar">
@@ -1828,38 +1890,86 @@ export default function ExecucaoOrcamentaria() {
                 </button>
               </div>
 
-              <div className="flex flex-wrap gap-2 border-b border-slate-200 bg-slate-50 px-6 py-3">
-                <button type="button" onClick={exportarComposicaoCSV} disabled={!linhasComposicao.length} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-                  <Download size={16} /> Exportar CSV
-                </button>
-                <button type="button" onClick={exportarComposicaoExcel} disabled={!linhasComposicao.length} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
-                  <FileSpreadsheet size={16} /> Exportar Excel
-                </button>
-                <span className="self-center text-xs text-slate-500">A soma da coluna Valor corresponde ao indicador selecionado.</span>
+              <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+                  <div className="relative xl:col-span-2">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      value={filtroComposicao}
+                      onChange={(event) => setFiltroComposicao(event.target.value)}
+                      placeholder="Pesquisar NE, fornecedor, processo, descrição..."
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+
+                  <select value={filtroComposicaoPtres} onChange={(event) => setFiltroComposicaoPtres(event.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-400">
+                    <option value="">Todos os PTRES</option>
+                    {opcoesComposicao.ptres.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+
+                  <select value={filtroComposicaoFonte} onChange={(event) => setFiltroComposicaoFonte(event.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-400">
+                    <option value="">Todas as fontes</option>
+                    {opcoesComposicao.fontes.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+
+                  <select value={filtroComposicaoNatureza} onChange={(event) => setFiltroComposicaoNatureza(event.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-400">
+                    <option value="">Todas as naturezas</option>
+                    {opcoesComposicao.naturezas.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button type="button" onClick={limparFiltrosComposicao} className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                    <Filter size={14} /> Limpar filtros
+                  </button>
+                  <button type="button" onClick={exportarComposicaoCSV} disabled={!linhasComposicaoFiltradas.length} className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50">
+                    <Download size={14} /> Exportar CSV
+                  </button>
+                  <button type="button" onClick={exportarComposicaoExcel} disabled={!linhasComposicaoFiltradas.length} className="inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
+                    <FileSpreadsheet size={14} /> Exportar Excel
+                  </button>
+                  <span className="text-xs text-slate-500">A exportação respeita os filtros desta composição.</span>
+                </div>
               </div>
 
-              <div className="overflow-auto">
-                {linhasComposicao.length ? (
-                  <table className="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead className="sticky top-0 bg-slate-100">
+              <div className="min-h-0 flex-1 overflow-auto">
+                {linhasComposicaoFiltradas.length ? (
+                  <table className="w-full table-fixed divide-y divide-slate-200 text-[11px]">
+                    <thead className="sticky top-0 z-10 bg-slate-100">
                       <tr>
-                        {Object.keys(linhasComposicao[0]).map((coluna) => (
-                          <th key={coluna} className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{coluna.replace(/_/g, " ")}</th>
+                        {Object.keys(linhasComposicaoFiltradas[0]).map((coluna) => (
+                          <th
+                            key={coluna}
+                            className={`px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500 ${
+                              coluna === "Valor" ? "w-[9%] text-right" :
+                              coluna === "Favorecido" ? "w-[15%]" :
+                              coluna === "Descricao" ? "w-[19%]" :
+                              coluna === "Natureza_Descricao" || coluna === "Natureza_Detalhada" ? "w-[14%]" :
+                              coluna === "Processo" ? "w-[12%]" :
+                              coluna === "NE_CCOR" ? "w-[11%]" :
+                              coluna === "CNPJ_CPF" ? "w-[9%]" :
+                              coluna === "PTRES" ? "w-[7%]" :
+                              coluna === "Fonte" ? "w-[9%]" :
+                              coluna === "Natureza" ? "w-[7%]" :
+                              coluna === "PI" ? "w-[9%]" : "w-[9%]"
+                            }`}
+                          >
+                            {coluna.replace(/_/g, " ")}
+                          </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
-                      {linhasComposicao.map((linha, indice) => (
+                      {linhasComposicaoFiltradas.map((linha, indice) => (
                         <tr key={indice} className="hover:bg-slate-50">
-                          {Object.keys(linhasComposicao[0]).map((coluna) => (
+                          {Object.keys(linhasComposicaoFiltradas[0]).map((coluna) => (
                             <td
                               key={coluna}
-                              className={`px-4 py-3 align-top text-slate-700 ${
+                              title={coluna === "Valor" ? undefined : String(linha[coluna] ?? "")}
+                              className={`px-2 py-2 align-top leading-4 text-slate-700 ${
                                 coluna === "Valor"
                                   ? "whitespace-nowrap text-right font-semibold text-slate-900"
-                                  : coluna === "Favorecido" || coluna === "Descricao"
-                                    ? "min-w-[220px] max-w-[360px] whitespace-normal break-words leading-5"
-                                    : "max-w-[240px] whitespace-nowrap"
+                                  : "whitespace-normal break-words [overflow-wrap:anywhere]"
                               }`}
                             >
                               {coluna === "Valor"
@@ -1872,7 +1982,7 @@ export default function ExecucaoOrcamentaria() {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="p-12 text-center text-sm text-slate-500">Não há registros para compor este indicador com os filtros atuais.</div>
+                  <div className="p-12 text-center text-sm text-slate-500">Nenhum registro encontrado com os filtros desta composição.</div>
                 )}
               </div>
             </div>
