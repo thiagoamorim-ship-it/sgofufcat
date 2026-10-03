@@ -6,6 +6,8 @@ import {
   CheckCircle2,
   Clock3,
   FileText,
+  FileSpreadsheet,
+  Download,
   Filter,
   Landmark,
   PieChart,
@@ -291,6 +293,9 @@ export default function ExecucaoOrcamentaria() {
   const [natureza, setNatureza] =
     useState("");
 
+  const [situacao, setSituacao] =
+    useState("");
+
   async function carregarDados() {
     setCarregando(true);
     setErro(null);
@@ -500,6 +505,27 @@ export default function ExecucaoOrcamentaria() {
         return false;
       }
 
+      const valorALiquidar = numero(item.empenhos_a_liquidar);
+      const valorEmLiquidacao = numero(item.empenhos_em_liquidacao);
+      const valorLiquidadoPagar = numero(item.empenhos_liquidados_a_pagar);
+      const valorPago = numero(item.empenhos_pagos);
+
+      if (situacao === "empenhado_nao_liquidado" && valorALiquidar <= 0) {
+        return false;
+      }
+
+      if (situacao === "em_liquidacao" && valorEmLiquidacao <= 0) {
+        return false;
+      }
+
+      if (situacao === "liquidado_nao_pago" && valorLiquidadoPagar <= 0) {
+        return false;
+      }
+
+      if (situacao === "pago" && valorPago <= 0) {
+        return false;
+      }
+
       if (!termo) {
         return true;
       }
@@ -528,6 +554,7 @@ export default function ExecucaoOrcamentaria() {
     ptres,
     fonte,
     natureza,
+    situacao,
   ]);
 
   const creditoFiltrado = useMemo(() => {
@@ -788,6 +815,90 @@ export default function ExecucaoOrcamentaria() {
     setPtres("");
     setFonte("");
     setNatureza("");
+    setSituacao("");
+  }
+
+  function linhasExportacao() {
+    return empenhosFiltrados.map((item) => {
+      const aLiquidar = numero(item.empenhos_a_liquidar);
+      const emLiquidacao = numero(item.empenhos_em_liquidacao);
+      const liquidadoPagar = numero(item.empenhos_liquidados_a_pagar);
+      const pago = numero(item.empenhos_pagos);
+
+      return {
+        NE: item.ne_ccor || "",
+        CNPJ_CPF: item.favorecido_numero || "",
+        Favorecido: item.favorecido_nome || "",
+        Processo: item.numero_processo || "",
+        PTRES: item.ptres || "",
+        Fonte: item.fonte_recursos_detalhada_codigo || "",
+        Natureza: item.natureza_despesa_codigo || "",
+        Natureza_Descricao: item.natureza_despesa_nome || "",
+        Natureza_Detalhada: item.natureza_despesa_detalhada_codigo || "",
+        PI: item.pi_codigo || "",
+        Descricao: item.descricao || "",
+        A_Liquidar: aLiquidar,
+        Em_Liquidacao: emLiquidacao,
+        Liquidado_a_Pagar: liquidadoPagar,
+        Pago: pago,
+        Total_Empenhado: aLiquidar + emLiquidacao + liquidadoPagar + pago,
+      };
+    });
+  }
+
+  function baixarArquivo(conteudo: BlobPart, tipo: string, nome: string) {
+    const blob = new Blob([conteudo], { type: tipo });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = nome;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  function exportarCSV() {
+    const linhas = linhasExportacao();
+    if (!linhas.length) return;
+
+    const colunas = Object.keys(linhas[0]) as Array<keyof (typeof linhas)[number]>;
+    const escapar = (valor: unknown) => `"${String(valor ?? "").replace(/"/g, '""')}"`;
+    const csv = [
+      colunas.join(";"),
+      ...linhas.map((linha) => colunas.map((coluna) => escapar(linha[coluna])).join(";")),
+    ].join("\n");
+
+    baixarArquivo(
+      `\uFEFF${csv}`,
+      "text/csv;charset=utf-8;",
+      `execucao-orcamentaria-${new Date().toISOString().slice(0, 10)}.csv`,
+    );
+  }
+
+  function exportarExcel() {
+    const linhas = linhasExportacao();
+    if (!linhas.length) return;
+
+    const colunas = Object.keys(linhas[0]) as Array<keyof (typeof linhas)[number]>;
+    const escaparHtml = (valor: unknown) => String(valor ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+    const cabecalho = colunas.map((coluna) => `<th>${escaparHtml(coluna)}</th>`).join("");
+    const corpo = linhas.map((linha) =>
+      `<tr>${colunas.map((coluna) => `<td>${escaparHtml(linha[coluna])}</td>`).join("")}</tr>`,
+    ).join("");
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><table border="1"><thead><tr>${cabecalho}</tr></thead><tbody>${corpo}</tbody></table></body></html>`;
+
+    baixarArquivo(
+      `\uFEFF${html}`,
+      "application/vnd.ms-excel;charset=utf-8;",
+      `execucao-orcamentaria-${new Date().toISOString().slice(0, 10)}.xls`,
+    );
   }
 
   return (
@@ -936,7 +1047,7 @@ export default function ExecucaoOrcamentaria() {
             </button>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
 
             <div className="relative">
               <Search
@@ -1030,6 +1141,46 @@ export default function ExecucaoOrcamentaria() {
                 ),
               )}
             </select>
+
+            <select
+              value={situacao}
+              onChange={(event) => setSituacao(event.target.value)}
+              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="">Todas as situações</option>
+              <option value="empenhado_nao_liquidado">Empenhado e não liquidado</option>
+              <option value="em_liquidacao">Em liquidação</option>
+              <option value="liquidado_nao_pago">Liquidado e não pago</option>
+              <option value="pago">Pago</option>
+            </select>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-slate-500">
+              A exportação respeita todos os filtros aplicados e contém {empenhosFiltrados.length} registro(s).
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={exportarCSV}
+                disabled={!empenhosFiltrados.length}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Download size={16} />
+                Exportar CSV
+              </button>
+
+              <button
+                type="button"
+                onClick={exportarExcel}
+                disabled={!empenhosFiltrados.length}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <FileSpreadsheet size={16} />
+                Exportar Excel
+              </button>
+            </div>
           </div>
         </section>
 
