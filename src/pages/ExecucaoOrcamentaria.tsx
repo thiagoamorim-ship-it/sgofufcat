@@ -2,15 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Banknote,
+  BarChart3,
   CheckCircle2,
   Clock3,
   FileText,
   Filter,
   Landmark,
+  PieChart,
   Loader2,
   RefreshCw,
   Search,
+  TrendingUp,
   Upload,
+  Users,
   WalletCards,
 } from "lucide-react";
 
@@ -172,6 +176,86 @@ function MetricCard({
           {subtitulo}
         </p>
       )}
+    </div>
+  );
+}
+
+function PercentCard({
+  titulo,
+  valor,
+  subtitulo,
+}: {
+  titulo: string;
+  valor: number;
+  subtitulo: string;
+}) {
+  const percentual = Math.max(0, Math.min(100, valor));
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-900 p-5 text-white shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-slate-300">{titulo}</p>
+          <p className="mt-2 text-3xl font-bold tracking-tight">
+            {valor.toLocaleString("pt-BR", {
+              minimumFractionDigits: 1,
+              maximumFractionDigits: 1,
+            })}%
+          </p>
+        </div>
+        <div className="rounded-xl bg-white/10 p-3 text-blue-200">
+          <TrendingUp size={21} />
+        </div>
+      </div>
+
+      <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full bg-blue-400 transition-all"
+          style={{ width: `${percentual}%` }}
+        />
+      </div>
+
+      <p className="mt-3 text-xs leading-5 text-slate-400">{subtitulo}</p>
+    </div>
+  );
+}
+
+function RankingBar({
+  rotulo,
+  valor,
+  maximo,
+  detalhe,
+}: {
+  rotulo: string;
+  valor: number;
+  maximo: number;
+  detalhe?: string;
+}) {
+  const largura = maximo > 0 ? Math.max(2, (valor / maximo) * 100) : 0;
+
+  return (
+    <div>
+      <div className="mb-1.5 flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-slate-700" title={rotulo}>
+            {rotulo || "Não informado"}
+          </p>
+          {detalhe && (
+            <p className="mt-0.5 truncate text-xs text-slate-400" title={detalhe}>
+              {detalhe}
+            </p>
+          )}
+        </div>
+        <span className="shrink-0 text-sm font-semibold text-slate-900">
+          {moeda(valor)}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+        <div
+          className="h-full rounded-full bg-blue-600 transition-all"
+          style={{ width: `${largura}%` }}
+        />
+      </div>
     </div>
   );
 }
@@ -611,6 +695,94 @@ export default function ExecucaoOrcamentaria() {
     rapFiltrado,
   ]);
 
+  const analises = useMemo(() => {
+    const totalLiquidado =
+      indicadores.emLiquidacao +
+      indicadores.liquidadoPagar +
+      indicadores.pago;
+
+    const percentualPago =
+      indicadores.empenhado > 0
+        ? (indicadores.pago / indicadores.empenhado) * 100
+        : 0;
+
+    const percentualLiquidado =
+      indicadores.empenhado > 0
+        ? (totalLiquidado / indicadores.empenhado) * 100
+        : 0;
+
+    const totalCreditoMaisEmpenhado =
+      indicadores.saldoCredito + indicadores.empenhado;
+
+    const percentualComprometido =
+      totalCreditoMaisEmpenhado > 0
+        ? (indicadores.empenhado / totalCreditoMaisEmpenhado) * 100
+        : 0;
+
+    const totalEmpenho = (item: Empenho) =>
+      numero(item.empenhos_a_liquidar) +
+      numero(item.empenhos_em_liquidacao) +
+      numero(item.empenhos_liquidados_a_pagar) +
+      numero(item.empenhos_pagos);
+
+    const agrupar = (
+      chave: (item: Empenho) => string,
+      detalhe?: (item: Empenho) => string,
+    ) => {
+      const mapa = new Map<
+        string,
+        { rotulo: string; valor: number; detalhe: string }
+      >();
+
+      empenhosFiltrados.forEach((item) => {
+        const rotulo = chave(item) || "Não informado";
+        const atual = mapa.get(rotulo) || {
+          rotulo,
+          valor: 0,
+          detalhe: detalhe?.(item) || "",
+        };
+        atual.valor += totalEmpenho(item);
+        if (!atual.detalhe && detalhe) atual.detalhe = detalhe(item);
+        mapa.set(rotulo, atual);
+      });
+
+      return Array.from(mapa.values())
+        .sort((a, b) => b.valor - a.valor)
+        .slice(0, 5);
+    };
+
+    const porNatureza = agrupar(
+      (item) => item.natureza_despesa_codigo || "Não informado",
+      (item) => item.natureza_despesa_nome || "",
+    );
+
+    const porPtres = agrupar((item) => item.ptres || "Não informado");
+
+    const porFornecedor = agrupar(
+      (item) => item.favorecido_nome || item.favorecido_numero || "Não informado",
+      (item) => item.favorecido_numero || "",
+    );
+
+    const rapOrdenado = [...rapFiltrado]
+      .map((item) => ({
+        ...item,
+        valor: numero(item.saldo),
+      }))
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, 5);
+
+    return {
+      totalLiquidado,
+      percentualPago,
+      percentualLiquidado,
+      percentualComprometido,
+      porNatureza,
+      porPtres,
+      porFornecedor,
+      rapOrdenado,
+    };
+  }, [indicadores, empenhosFiltrados, rapFiltrado]);
+
   function limparFiltros() {
     setPesquisa("");
     setPtres("");
@@ -928,6 +1100,178 @@ export default function ExecucaoOrcamentaria() {
             subtitulo="Saldo de RAP conforme a base importada."
             icon={RefreshCw}
           />
+        </section>
+
+        {/* Visão executiva */}
+        <section className="mb-6 grid gap-4 lg:grid-cols-3">
+          <PercentCard
+            titulo="Pago / Empenhado"
+            valor={analises.percentualPago}
+            subtitulo="Percentual do valor empenhado que já alcançou o estágio de pagamento."
+          />
+          <PercentCard
+            titulo="Liquidado / Empenhado"
+            valor={analises.percentualLiquidado}
+            subtitulo="Considera valores em liquidação, liquidados a pagar e pagos."
+          />
+          <PercentCard
+            titulo="Crédito comprometido"
+            valor={analises.percentualComprometido}
+            subtitulo="Relação entre o empenhado e o total formado por empenhado + saldo de crédito."
+          />
+        </section>
+
+        {/* Fluxo da execução */}
+        <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
+          <div className="mb-6 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+            <div>
+              <div className="flex items-center gap-2">
+                <BarChart3 size={19} className="text-blue-600" />
+                <h2 className="font-semibold text-slate-900">Fluxo da Execução</h2>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Composição dos valores da execução dos empenhos filtrados.
+              </p>
+            </div>
+            <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
+              Empenhado {moeda(indicadores.empenhado)}
+            </span>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-4">
+            {[
+              { titulo: "A Liquidar", valor: indicadores.aLiquidar },
+              { titulo: "Em Liquidação", valor: indicadores.emLiquidacao },
+              { titulo: "Liquidado a Pagar", valor: indicadores.liquidadoPagar },
+              { titulo: "Pago", valor: indicadores.pago },
+            ].map((item) => {
+              const participacao = indicadores.empenhado > 0
+                ? (item.valor / indicadores.empenhado) * 100
+                : 0;
+
+              return (
+                <div key={item.titulo} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {item.titulo}
+                  </p>
+                  <p className="mt-2 text-lg font-bold text-slate-900">{moeda(item.valor)}</p>
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+                    <div
+                      className="h-full rounded-full bg-blue-600"
+                      style={{ width: `${Math.min(100, Math.max(0, participacao))}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 text-xs font-medium text-slate-500">
+                    {participacao.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% do empenhado
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Rankings gerenciais */}
+        <section className="mb-6 grid gap-6 xl:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-5 flex items-center gap-2">
+              <PieChart size={18} className="text-blue-600" />
+              <div>
+                <h2 className="font-semibold text-slate-900">Por Natureza da Despesa</h2>
+                <p className="text-xs text-slate-500">5 maiores naturezas por valor empenhado</p>
+              </div>
+            </div>
+            <div className="space-y-5">
+              {analises.porNatureza.length ? analises.porNatureza.map((item) => (
+                <RankingBar
+                  key={item.rotulo}
+                  rotulo={item.rotulo}
+                  detalhe={item.detalhe}
+                  valor={item.valor}
+                  maximo={analises.porNatureza[0]?.valor || 0}
+                />
+              )) : <p className="text-sm text-slate-400">Sem dados para os filtros selecionados.</p>}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-5 flex items-center gap-2">
+              <Landmark size={18} className="text-blue-600" />
+              <div>
+                <h2 className="font-semibold text-slate-900">Por PTRES</h2>
+                <p className="text-xs text-slate-500">5 maiores PTRES por valor empenhado</p>
+              </div>
+            </div>
+            <div className="space-y-5">
+              {analises.porPtres.length ? analises.porPtres.map((item) => (
+                <RankingBar
+                  key={item.rotulo}
+                  rotulo={item.rotulo}
+                  valor={item.valor}
+                  maximo={analises.porPtres[0]?.valor || 0}
+                />
+              )) : <p className="text-sm text-slate-400">Sem dados para os filtros selecionados.</p>}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-5 flex items-center gap-2">
+              <Users size={18} className="text-blue-600" />
+              <div>
+                <h2 className="font-semibold text-slate-900">Maiores Fornecedores</h2>
+                <p className="text-xs text-slate-500">5 maiores favorecidos por valor empenhado</p>
+              </div>
+            </div>
+            <div className="space-y-5">
+              {analises.porFornecedor.length ? analises.porFornecedor.map((item) => (
+                <RankingBar
+                  key={item.rotulo}
+                  rotulo={item.rotulo}
+                  detalhe={item.detalhe}
+                  valor={item.valor}
+                  maximo={analises.porFornecedor[0]?.valor || 0}
+                />
+              )) : <p className="text-sm text-slate-400">Sem dados para os filtros selecionados.</p>}
+            </div>
+          </div>
+        </section>
+
+        {/* Restos a Pagar */}
+        <section className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col justify-between gap-3 border-b border-slate-200 px-5 py-5 sm:flex-row sm:items-center">
+            <div>
+              <div className="flex items-center gap-2">
+                <RefreshCw size={18} className="text-blue-600" />
+                <h2 className="font-semibold text-slate-900">Restos a Pagar</h2>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Maiores saldos da posição de RAP importada do Tesouro Gerencial.
+              </p>
+            </div>
+            <div className="rounded-xl bg-slate-900 px-4 py-2.5 text-right text-white">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Saldo RAP</p>
+              <p className="text-lg font-bold">{moeda(indicadores.saldoRap)}</p>
+            </div>
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {analises.rapOrdenado.length ? analises.rapOrdenado.map((item) => (
+              <div key={item.id} className="grid gap-3 px-5 py-4 transition hover:bg-slate-50 md:grid-cols-[160px_1fr_180px] md:items-center">
+                <div>
+                  <p className="text-xs font-medium text-slate-400">NE / CCOR</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-700">{item.ne_ccor || "—"}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-700">{item.favorecido || "Favorecido não informado"}</p>
+                  <p className="mt-1 truncate text-xs text-slate-400">
+                    PTRES {item.ptres || "—"} • Natureza {item.natureza_despesa || "—"}
+                  </p>
+                </div>
+                <p className="text-left text-base font-bold text-slate-900 md:text-right">{moeda(item.valor)}</p>
+              </div>
+            )) : (
+              <div className="px-5 py-10 text-center text-sm text-slate-400">Sem RAP para os filtros selecionados.</div>
+            )}
+          </div>
         </section>
 
         {/* Detalhamento */}
