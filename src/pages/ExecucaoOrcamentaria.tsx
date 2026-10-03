@@ -477,58 +477,27 @@ export default function ExecucaoOrcamentaria() {
     ).sort();
   }, [empenhos]);
 
-  const empenhosFiltrados = useMemo(() => {
-    const termo =
-      pesquisa.trim().toLowerCase();
+  const empenhosBaseFiltrados = useMemo(() => {
+    const termo = pesquisa.trim().toLowerCase();
 
     return empenhos.filter((item) => {
-      if (
-        ptres &&
-        item.ptres !== ptres
-      ) {
-        return false;
-      }
+      if (ptres && item.ptres !== ptres) return false;
 
       if (
         fonte &&
-        item.fonte_recursos_detalhada_codigo !==
-          fonte
+        item.fonte_recursos_detalhada_codigo !== fonte
       ) {
         return false;
       }
 
       if (
         natureza &&
-        item.natureza_despesa_codigo !==
-          natureza
+        item.natureza_despesa_codigo !== natureza
       ) {
         return false;
       }
 
-      const valorALiquidar = numero(item.empenhos_a_liquidar);
-      const valorEmLiquidacao = numero(item.empenhos_em_liquidacao);
-      const valorLiquidadoPagar = numero(item.empenhos_liquidados_a_pagar);
-      const valorPago = numero(item.empenhos_pagos);
-
-      if (situacao === "empenhado_nao_liquidado" && valorALiquidar <= 0) {
-        return false;
-      }
-
-      if (situacao === "em_liquidacao" && valorEmLiquidacao <= 0) {
-        return false;
-      }
-
-      if (situacao === "liquidado_nao_pago" && valorLiquidadoPagar <= 0) {
-        return false;
-      }
-
-      if (situacao === "pago" && valorPago <= 0) {
-        return false;
-      }
-
-      if (!termo) {
-        return true;
-      }
+      if (!termo) return true;
 
       const conteudo = [
         item.ne_ccor,
@@ -548,14 +517,34 @@ export default function ExecucaoOrcamentaria() {
 
       return conteudo.includes(termo);
     });
-  }, [
-    empenhos,
-    pesquisa,
-    ptres,
-    fonte,
-    natureza,
-    situacao,
-  ]);
+  }, [empenhos, pesquisa, ptres, fonte, natureza]);
+
+  const empenhosFiltrados = useMemo(() => {
+    return empenhosBaseFiltrados.filter((item) => {
+      const valorALiquidar = numero(item.empenhos_a_liquidar);
+      const valorEmLiquidacao = numero(item.empenhos_em_liquidacao);
+      const valorLiquidadoPagar = numero(item.empenhos_liquidados_a_pagar);
+      const valorPago = numero(item.empenhos_pagos);
+
+      if (situacao === "empenhado_nao_liquidado") {
+        return valorALiquidar > 0;
+      }
+
+      if (situacao === "em_liquidacao") {
+        return valorEmLiquidacao > 0;
+      }
+
+      if (situacao === "liquidado_nao_pago") {
+        return valorLiquidadoPagar > 0;
+      }
+
+      if (situacao === "pago") {
+        return valorPago > 0;
+      }
+
+      return true;
+    });
+  }, [empenhosBaseFiltrados, situacao]);
 
   const creditoFiltrado = useMemo(() => {
     return credito.filter((item) => {
@@ -644,7 +633,7 @@ export default function ExecucaoOrcamentaria() {
 
   const indicadores = useMemo(() => {
     const aLiquidar =
-      empenhosFiltrados.reduce(
+      empenhosBaseFiltrados.reduce(
         (total, item) =>
           total +
           numero(
@@ -654,7 +643,7 @@ export default function ExecucaoOrcamentaria() {
       );
 
     const emLiquidacao =
-      empenhosFiltrados.reduce(
+      empenhosBaseFiltrados.reduce(
         (total, item) =>
           total +
           numero(
@@ -664,7 +653,7 @@ export default function ExecucaoOrcamentaria() {
       );
 
     const liquidadoPagar =
-      empenhosFiltrados.reduce(
+      empenhosBaseFiltrados.reduce(
         (total, item) =>
           total +
           numero(
@@ -674,7 +663,7 @@ export default function ExecucaoOrcamentaria() {
       );
 
     const pago =
-      empenhosFiltrados.reduce(
+      empenhosBaseFiltrados.reduce(
         (total, item) =>
           total +
           numero(
@@ -717,7 +706,7 @@ export default function ExecucaoOrcamentaria() {
       saldoRap,
     };
   }, [
-    empenhosFiltrados,
+    empenhosBaseFiltrados,
     creditoFiltrado,
     rapFiltrado,
   ]);
@@ -1157,7 +1146,7 @@ export default function ExecucaoOrcamentaria() {
 
           <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-slate-500">
-              A exportação respeita todos os filtros aplicados e contém {empenhosFiltrados.length} registro(s).
+              A exportação respeita todos os filtros aplicados e contém {empenhosFiltrados.length} registro(s). Os cards superiores mantêm a posição consolidada dos demais filtros; a situação atua na consulta, rankings e exportação.
             </p>
 
             <div className="flex flex-wrap gap-2">
