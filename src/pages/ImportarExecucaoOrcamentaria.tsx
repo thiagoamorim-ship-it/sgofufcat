@@ -1,109 +1,95 @@
-                </p>
-              </div>
-            </div>
-          </section>
+import { useMemo, useState } from 'react';
+import {
+  AlertCircle,
+  CheckCircle2,
+  FileSpreadsheet,
+  Loader2,
+  Upload,
+  X,
+} from 'lucide-react';
+import * as XLSX from 'xlsx';
 
-          {/* Prévia */}
-          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex flex-col justify-between gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center">
-              <div>
-                <h2 className="font-bold text-slate-900">
-                  Pré-visualização
-                </h2>
+import { supabase } from '../lib/supabase';
 
-                <p className="mt-1 text-xs text-slate-500">
-                  Primeiros 5 registros •{' '}
-                  {colunas.length}{' '}
-                  coluna(s) identificada(s)
-                </p>
-              </div>
+type TipoBase =
+  | 'empenhos'
+  | 'rap'
+  | 'credito_orcamentario'
+  | 'desconhecido';
 
-              <button
-                type="button"
-                onClick={limpar}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-              >
-                <X size={16} />
-                Remover arquivo
-              </button>
-            </div>
+type Linha = Record<string, unknown>;
 
-            <div className="overflow-x-auto">
-              <table className="min-w-max divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    {colunas.map(
-                      (coluna) => (
-                        <th
-                          key={coluna}
-                          className="max-w-[260px] whitespace-nowrap px-4 py-3 text-left text-xs font-semibold text-slate-500"
-                        >
-                          {coluna}
-                        </th>
-                      ),
-                    )}
-                  </tr>
-                </thead>
+type ResultadoLeitura = {
+  tipo: TipoBase;
+  colunas: string[];
+  linhas: Linha[];
+  linhaInicialDados: number;
+};
 
-                <tbody className="divide-y divide-slate-100">
-                  {previa.map(
-                    (linha, indice) => (
-                      <tr key={indice}>
-                        {colunas.map(
-                          (coluna) => (
-                            <td
-                              key={coluna}
-                              className="max-w-[260px] truncate whitespace-nowrap px-4 py-3 text-xs text-slate-600"
-                              title={texto(
-                                linha[coluna],
-                              )}
-                            >
-                              {texto(
-                                linha[coluna],
-                              ) || '—'}
-                            </td>
-                          ),
-                        )}
-                      </tr>
-                    ),
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
+function texto(valor: unknown) {
+  return String(valor ?? '')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
 
-          {/* Confirmação */}
-          <div className="flex flex-col items-end gap-2">
-            {tipo !== 'rap' && tipo !== 'empenhos' && (
-              <p className="text-xs text-amber-600">
-                A gravação no banco está habilitada para RAP e Empenhos.
-              </p>
-            )}
+function normalizar(valor: unknown) {
+  return texto(valor)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
 
-            <button
-              type="button"
-              onClick={() => void confirmarImportacao()}
-              disabled={
-                importando ||
-                (tipo !== 'rap' && tipo !== 'empenhos') ||
-                !linhas.length
-              }
-              className="inline-flex items-center gap-2 rounded-xl bg-[#002B49] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#003d66] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-            >
-              {importando && (
-                <Loader2
-                  size={17}
-                  className="animate-spin"
-                />
-              )}
+function linhaContem(
+  linha: unknown[],
+  termo: string,
+) {
+  const procurado = normalizar(termo);
 
-              {importando
-                ? 'Importando...'
-                : 'Confirmar importação'}
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+  return linha.some((celula) =>
+    normalizar(celula).includes(procurado),
   );
 }
+
+
+function matrizComCelulasMescladas(
+  worksheet: XLSX.WorkSheet,
+): unknown[][] {
+  const matriz = XLSX.utils.sheet_to_json<unknown[]>(
+    worksheet,
+    {
+      header: 1,
+      defval: '',
+      raw: false,
+    },
+  );
+
+  const mesclas = worksheet['!merges'] || [];
+
+  mesclas.forEach((mescla) => {
+    const valorOrigem =
+      matriz[mescla.s.r]?.[mescla.s.c] ?? '';
+
+    if (texto(valorOrigem) === '') {
+      return;
+    }
+
+    for (
+      let linha = mescla.s.r;
+      linha <= mescla.e.r;
+      linha += 1
+    ) {
+      if (!matriz[linha]) {
+        matriz[linha] = [];
+      }
+
+      for (
+        let coluna = mescla.s.c;
+        coluna <= mescla.e.c;
+        coluna += 1
+      ) {
+        if (texto(matriz[linha][coluna]) === '') {
+          matriz[linha][coluna] = valorOrigem;
+        }
+      }
+    }
+  });
