@@ -384,419 +384,461 @@ function processarMatriz(
    * que linhas de cabeçalho sejam interpretadas como dados.
    */
   if (tipo === 'rap') {
-    const limiteCabecalho =
-      Math.min(matriz.length, 15);
+  const limiteCabecalho =
+    Math.min(matriz.length, 15);
 
-    let linhaPrincipal = -1;
-    let linhaComplementar = -1;
-    let melhorPontuacao = -1;
+  let linhaPrincipal = -1;
+  let linhaComplementar = -1;
+  let melhorPontuacao = -1;
 
-    /*
-     * Localiza a principal linha do cabeçalho.
-     */
-    for (
-      let indice = 0;
-      indice < limiteCabecalho;
-      indice += 1
+  /*
+   * Localiza a principal linha do cabeçalho.
+   */
+  for (
+    let indice = 0;
+    indice < limiteCabecalho;
+    indice += 1
+  ) {
+    const linha = matriz[indice] || [];
+
+    const conteudoLinha = linha
+      .map(normalizar)
+      .join(' | ');
+
+    let pontuacao = 0;
+
+    if (
+      conteudoLinha.includes('ne ccor')
     ) {
-      const linha = matriz[indice] || [];
-
-      const conteudoLinha = linha
-        .map(normalizar)
-        .join(' | ');
-
-      let pontuacao = 0;
-
-      if (
-        conteudoLinha.includes('ne ccor')
-      ) {
-        pontuacao += 4;
-      }
-
-      if (
-        conteudoLinha.includes('favorecido')
-      ) {
-        pontuacao += 2;
-      }
-
-      if (
-        conteudoLinha.includes(
-          'natureza despesa',
-        )
-      ) {
-        pontuacao += 2;
-      }
-
-      if (
-        conteudoLinha.includes('ptres')
-      ) {
-        pontuacao += 2;
-      }
-
-      if (
-        conteudoLinha.includes(
-          'fonte recursos',
-        )
-      ) {
-        pontuacao += 2;
-      }
-
-      if (
-        conteudoLinha.includes(
-          'conta contabil',
-        )
-      ) {
-        pontuacao += 2;
-      }
-
-      if (
-        conteudoLinha.includes('saldo')
-      ) {
-        pontuacao += 2;
-      }
-
-      if (pontuacao > melhorPontuacao) {
-        melhorPontuacao = pontuacao;
-        linhaPrincipal = indice;
-      }
+      pontuacao += 4;
     }
 
-    if (linhaPrincipal < 0) {
-      return {
-        tipo: 'desconhecido',
-        colunas: [],
-        linhas: [],
-        linhaInicialDados: 0,
-      };
+    if (
+      conteudoLinha.includes('favorecido')
+    ) {
+      pontuacao += 2;
     }
 
-    /*
-     * Procura uma segunda linha de cabeçalho.
-     *
-     * Normalmente ela possui termos como Código,
-     * Número e Nome.
-     */
-    for (
-      let indice = linhaPrincipal + 1;
-      indice <
-      Math.min(
-        matriz.length,
-        linhaPrincipal + 4,
-      );
-      indice += 1
-    ) {
-      const linha = matriz[indice] || [];
-
-      const conteudoLinha = linha
-        .map(normalizar)
-        .join(' | ');
-
-      const pareceCabecalho =
-        conteudoLinha.includes('numero') ||
-        conteudoLinha.includes('nome') ||
-        conteudoLinha.includes('codigo') ||
-        conteudoLinha.includes(
-          'conta contabil',
-        ) ||
-        conteudoLinha.includes(
-          'saldo - r$',
-        );
-
-      const pareceDado = linha.some(
-        (celula) => {
-          const valor = texto(celula)
-            .replace(/\s/g, '')
-            .toUpperCase();
-
-          return /NE\d+/.test(valor);
-        },
-      );
-
-      if (
-        pareceCabecalho &&
-        !pareceDado
-      ) {
-        linhaComplementar = indice;
-      }
-    }
-
-    const principal =
-      matriz[linhaPrincipal] || [];
-
-    const complementar =
-      linhaComplementar >= 0
-        ? matriz[linhaComplementar] || []
-        : [];
-
-    const quantidadeColunas = Math.max(
-      principal.length,
-      complementar.length,
-      ...matriz
-        .slice(
-          linhaPrincipal,
-          Math.min(
-            matriz.length,
-            linhaPrincipal + 5,
-          ),
-        )
-        .map((linha) => linha.length),
-    );
-
-    const colunas: string[] = [];
-
-    /*
-     * Em células mescladas, o Excel normalmente mantém
-     * o título apenas na primeira coluna do grupo.
-     * Por isso carregamos o último título principal.
-     */
-    let ultimoCabecalhoPrincipal = '';
-
-    for (
-      let indice = 0;
-      indice < quantidadeColunas;
-      indice += 1
-    ) {
-      const valorPrincipal =
-        texto(principal[indice]);
-
-      const valorComplementar =
-        texto(complementar[indice]);
-
-      if (valorPrincipal) {
-        ultimoCabecalhoPrincipal =
-          valorPrincipal;
-      }
-
-      let nomeFinal =
-        valorPrincipal ||
-        ultimoCabecalhoPrincipal;
-
-      if (
-        valorComplementar &&
-        normalizar(valorComplementar) !==
-          normalizar(nomeFinal)
-      ) {
-        nomeFinal = nomeFinal
-          ? `${nomeFinal} - ${valorComplementar}`
-          : valorComplementar;
-      }
-
-      const nomeNormalizado =
-        normalizar(nomeFinal);
-
-      /*
-       * Favorecido
-       */
-      if (
-        nomeNormalizado.includes(
-          'ne ccor - favorecido',
-        ) &&
-        (
-          nomeNormalizado.includes('numero') ||
-          nomeNormalizado.includes('codigo')
-        )
-      ) {
-        nomeFinal =
-          'NE CCor - Favorecido Número';
-      } else if (
-        nomeNormalizado.includes(
-          'ne ccor - favorecido',
-        ) &&
-        nomeNormalizado.includes('nome')
-      ) {
-        nomeFinal =
-          'NE CCor - Favorecido Nome';
-      }
-
-      /*
-       * Natureza da Despesa Detalhada
-       */
-      else if (
-        nomeNormalizado.includes(
-          'natureza despesa detalhada',
-        ) &&
-        (
-          nomeNormalizado.includes('codigo') ||
-          nomeNormalizado.includes('numero')
-        )
-      ) {
-        nomeFinal =
-          'Natureza Despesa Detalhada Código';
-      } else if (
-        nomeNormalizado.includes(
-          'natureza despesa detalhada',
-        ) &&
-        nomeNormalizado.includes('nome')
-      ) {
-        nomeFinal =
-          'Natureza Despesa Detalhada Nome';
-      }
-
-      /*
-       * Natureza da Despesa
-       */
-      else if (
-        nomeNormalizado.includes(
-          'natureza despesa',
-        ) &&
-        (
-          nomeNormalizado.includes('codigo') ||
-          nomeNormalizado.includes('numero')
-        )
-      ) {
-        nomeFinal =
-          'Natureza Despesa Código';
-      } else if (
-        nomeNormalizado.includes(
-          'natureza despesa',
-        ) &&
-        nomeNormalizado.includes('nome')
-      ) {
-        nomeFinal =
-          'Natureza Despesa Nome';
-      }
-
-      /*
-       * Fonte
-       */
-      else if (
-        nomeNormalizado.includes(
-          'fonte recursos detalhada',
-        ) &&
-        (
-          nomeNormalizado.includes('codigo') ||
-          nomeNormalizado.includes('numero')
-        )
-      ) {
-        nomeFinal =
-          'Fonte Recursos Detalhada Código';
-      } else if (
-        nomeNormalizado.includes(
-          'fonte recursos detalhada',
-        ) &&
-        nomeNormalizado.includes('nome')
-      ) {
-        nomeFinal =
-          'Fonte Recursos Detalhada Nome';
-      }
-
-      /*
-       * PI
-       */
-      else if (
-        (
-          nomeNormalizado === 'pi' ||
-          nomeNormalizado.startsWith('pi -')
-        ) &&
-        (
-          nomeNormalizado.includes('codigo') ||
-          nomeNormalizado.includes('numero')
-        )
-      ) {
-        nomeFinal = 'PI Código';
-      } else if (
-        (
-          nomeNormalizado === 'pi' ||
-          nomeNormalizado.startsWith('pi -')
-        ) &&
-        nomeNormalizado.includes('nome')
-      ) {
-        nomeFinal = 'PI Nome';
-      }
-
-      /*
-       * Campos sem título.
-       */
-      if (!nomeFinal) {
-        nomeFinal =
-          `Campo RAP ${indice + 1}`;
-      }
-
-      /*
-       * Evita nomes duplicados.
-       */
-      let nomeUnico = nomeFinal;
-      let contador = 2;
-
-      while (
-        colunas.includes(nomeUnico)
-      ) {
-        nomeUnico =
-          `${nomeFinal} (${contador})`;
-
-        contador += 1;
-      }
-
-      colunas.push(nomeUnico);
-    }
-
-    const ultimaLinhaCabecalho =
-      Math.max(
-        linhaPrincipal,
-        linhaComplementar,
-      );
-
-    const linhaInicialDados =
-      ultimaLinhaCabecalho + 1;
-
-    const linhas: Linha[] = [];
-
-    for (
-      let indice = linhaInicialDados;
-      indice < matriz.length;
-      indice += 1
-    ) {
-      const linha = matriz[indice] || [];
-
-      const possuiConteudo =
-        linha.some(
-          (celula) =>
-            texto(celula) !== '',
-        );
-
-      if (!possuiConteudo) {
-        continue;
-      }
-
-      /*
-       * Uma linha de RAP válida deve possuir
-       * identificação de Nota de Empenho.
-       *
-       * Isso impede que linhas residuais do cabeçalho
-       * sejam contabilizadas como registros.
-       */
-      const primeiraColuna = texto(
-        linha[0],
+    if (
+      conteudoLinha.includes(
+        'natureza despesa',
       )
-        .replace(/\s/g, '')
-        .toUpperCase();
-
-      const possuiNE =
-        /NE\d+/.test(primeiraColuna);
-
-      if (!possuiNE) {
-        continue;
-      }
-
-      const registro: Linha = {};
-
-      colunas.forEach(
-        (coluna, indiceColuna) => {
-          registro[coluna] =
-            linha[indiceColuna] ?? '';
-        },
-      );
-
-      linhas.push(registro);
+    ) {
+      pontuacao += 2;
     }
 
+    if (
+      conteudoLinha.includes('ptres')
+    ) {
+      pontuacao += 2;
+    }
+
+    if (
+      conteudoLinha.includes(
+        'fonte recursos',
+      )
+    ) {
+      pontuacao += 2;
+    }
+
+    if (
+      conteudoLinha.includes(
+        'conta contabil',
+      )
+    ) {
+      pontuacao += 2;
+    }
+
+    if (
+      conteudoLinha.includes('saldo')
+    ) {
+      pontuacao += 2;
+    }
+
+    if (pontuacao > melhorPontuacao) {
+      melhorPontuacao = pontuacao;
+      linhaPrincipal = indice;
+    }
+  }
+
+  if (linhaPrincipal < 0) {
     return {
-      tipo,
-      colunas,
-      linhas,
-      linhaInicialDados,
+      tipo: 'desconhecido',
+      colunas: [],
+      linhas: [],
+      linhaInicialDados: 0,
     };
   }
+
+  /*
+   * Procura uma segunda linha de cabeçalho.
+   */
+  for (
+    let indice = linhaPrincipal + 1;
+    indice <
+    Math.min(
+      matriz.length,
+      linhaPrincipal + 4,
+    );
+    indice += 1
+  ) {
+    const linha = matriz[indice] || [];
+
+    const conteudoLinha = linha
+      .map(normalizar)
+      .join(' | ');
+
+    const pareceCabecalho =
+      conteudoLinha.includes('numero') ||
+      conteudoLinha.includes('nome') ||
+      conteudoLinha.includes('codigo') ||
+      conteudoLinha.includes(
+        'conta contabil',
+      ) ||
+      conteudoLinha.includes(
+        'saldo - r$',
+      );
+
+    const pareceDado = linha.some(
+      (celula) => {
+        const valor = texto(celula)
+          .replace(/\s/g, '')
+          .toUpperCase();
+
+        return /NE\d+/.test(valor);
+      },
+    );
+
+    if (
+      pareceCabecalho &&
+      !pareceDado
+    ) {
+      linhaComplementar = indice;
+    }
+  }
+
+  const principal =
+    matriz[linhaPrincipal] || [];
+
+  const complementar =
+    linhaComplementar >= 0
+      ? matriz[linhaComplementar] || []
+      : [];
+
+  const quantidadeColunas = Math.max(
+    principal.length,
+    complementar.length,
+    ...matriz
+      .slice(
+        linhaPrincipal,
+        Math.min(
+          matriz.length,
+          linhaPrincipal + 5,
+        ),
+      )
+      .map((linha) => linha.length),
+  );
+
+  const colunas: string[] = [];
+
+  /*
+   * Em células mescladas, o Excel normalmente mantém
+   * o título apenas na primeira coluna do grupo.
+   */
+  let ultimoCabecalhoPrincipal = '';
+
+  for (
+    let indice = 0;
+    indice < quantidadeColunas;
+    indice += 1
+  ) {
+    const valorPrincipal =
+      texto(principal[indice]);
+
+    const valorComplementar =
+      texto(complementar[indice]);
+
+    if (valorPrincipal) {
+      ultimoCabecalhoPrincipal =
+        valorPrincipal;
+    }
+
+    let nomeFinal =
+      valorPrincipal ||
+      ultimoCabecalhoPrincipal;
+
+    if (
+      valorComplementar &&
+      normalizar(valorComplementar) !==
+        normalizar(nomeFinal)
+    ) {
+      nomeFinal = nomeFinal
+        ? `${nomeFinal} - ${valorComplementar}`
+        : valorComplementar;
+    }
+
+    const nomeNormalizado =
+      normalizar(nomeFinal);
+
+    /*
+     * Favorecido
+     */
+    if (
+      nomeNormalizado.includes(
+        'ne ccor - favorecido',
+      ) &&
+      (
+        nomeNormalizado.includes('numero') ||
+        nomeNormalizado.includes('codigo')
+      )
+    ) {
+      nomeFinal =
+        'NE CCor - Favorecido Número';
+    } else if (
+      nomeNormalizado.includes(
+        'ne ccor - favorecido',
+      ) &&
+      nomeNormalizado.includes('nome')
+    ) {
+      nomeFinal =
+        'NE CCor - Favorecido Nome';
+    }
+
+    /*
+     * Natureza da Despesa Detalhada
+     */
+    else if (
+      nomeNormalizado.includes(
+        'natureza despesa detalhada',
+      ) &&
+      (
+        nomeNormalizado.includes('codigo') ||
+        nomeNormalizado.includes('numero')
+      )
+    ) {
+      nomeFinal =
+        'Natureza Despesa Detalhada Código';
+    } else if (
+      nomeNormalizado.includes(
+        'natureza despesa detalhada',
+      ) &&
+      nomeNormalizado.includes('nome')
+    ) {
+      nomeFinal =
+        'Natureza Despesa Detalhada Nome';
+    }
+
+    /*
+     * Natureza da Despesa
+     */
+    else if (
+      nomeNormalizado.includes(
+        'natureza despesa',
+      ) &&
+      (
+        nomeNormalizado.includes('codigo') ||
+        nomeNormalizado.includes('numero')
+      )
+    ) {
+      nomeFinal =
+        'Natureza Despesa Código';
+    } else if (
+      nomeNormalizado.includes(
+        'natureza despesa',
+      ) &&
+      nomeNormalizado.includes('nome')
+    ) {
+      nomeFinal =
+        'Natureza Despesa Nome';
+    }
+
+    /*
+     * Fonte
+     */
+    else if (
+      nomeNormalizado.includes(
+        'fonte recursos detalhada',
+      ) &&
+      (
+        nomeNormalizado.includes('codigo') ||
+        nomeNormalizado.includes('numero')
+      )
+    ) {
+      nomeFinal =
+        'Fonte Recursos Detalhada Código';
+    } else if (
+      nomeNormalizado.includes(
+        'fonte recursos detalhada',
+      ) &&
+      nomeNormalizado.includes('nome')
+    ) {
+      nomeFinal =
+        'Fonte Recursos Detalhada Nome';
+    }
+
+    /*
+     * PI
+     */
+    else if (
+      (
+        nomeNormalizado === 'pi' ||
+        nomeNormalizado.startsWith('pi -')
+      ) &&
+      (
+        nomeNormalizado.includes('codigo') ||
+        nomeNormalizado.includes('numero')
+      )
+    ) {
+      nomeFinal = 'PI Código';
+    } else if (
+      (
+        nomeNormalizado === 'pi' ||
+        nomeNormalizado.startsWith('pi -')
+      ) &&
+      nomeNormalizado.includes('nome')
+    ) {
+      nomeFinal = 'PI Nome';
+    }
+
+    /*
+     * Descrição e saldo do RAP.
+     */
+    else if (
+      normalizar(valorComplementar).includes(
+        'ne ccor - descricao',
+      )
+    ) {
+      nomeFinal = 'NE CCor - Descrição';
+    } else if (
+      normalizar(valorComplementar).includes(
+        'saldo - r$',
+      ) ||
+      normalizar(valorComplementar).includes(
+        'saldo r$',
+      )
+    ) {
+      nomeFinal =
+        'Saldo - R$ (Conta Contábil)';
+    }
+
+    /*
+     * Campos sem título.
+     */
+    if (!nomeFinal) {
+      nomeFinal =
+        `Campo RAP ${indice + 1}`;
+    }
+
+    /*
+     * Evita nomes duplicados.
+     */
+    let nomeUnico = nomeFinal;
+    let contador = 2;
+
+    while (
+      colunas.includes(nomeUnico)
+    ) {
+      nomeUnico =
+        `${nomeFinal} (${contador})`;
+
+      contador += 1;
+    }
+
+    colunas.push(nomeUnico);
+  }
+
+  /*
+   * Metadados da Conta Contábil do RAP.
+   */
+  const indiceSaldoRap = complementar.findIndex(
+    (celula) =>
+      normalizar(celula).includes('saldo'),
+  );
+
+  const contaContabilNumeroRap =
+    indiceSaldoRap >= 0
+      ? texto(principal[indiceSaldoRap])
+      : '';
+
+  const contaContabilNomeRap =
+    indiceSaldoRap >= 0
+      ? texto(
+          matriz[linhaPrincipal + 1]?.[
+            indiceSaldoRap
+          ],
+        )
+      : '';
+
+  const ultimaLinhaCabecalho =
+    Math.max(
+      linhaPrincipal,
+      linhaComplementar,
+    );
+
+  const linhaInicialDados =
+    ultimaLinhaCabecalho + 1;
+
+  const linhas: Linha[] = [];
+
+  for (
+    let indice = linhaInicialDados;
+    indice < matriz.length;
+    indice += 1
+  ) {
+    const linha = matriz[indice] || [];
+
+    const possuiConteudo =
+      linha.some(
+        (celula) =>
+          texto(celula) !== '',
+      );
+
+    if (!possuiConteudo) {
+      continue;
+    }
+
+    /*
+     * Uma linha de RAP válida deve possuir
+     * identificação de Nota de Empenho.
+     */
+    const primeiraColuna = texto(
+      linha[0],
+    )
+      .replace(/\s/g, '')
+      .toUpperCase();
+
+    const possuiNE =
+      /NE\d+/.test(primeiraColuna);
+
+    if (!possuiNE) {
+      continue;
+    }
+
+    const registro: Linha = {};
+
+    colunas.forEach(
+      (coluna, indiceColuna) => {
+        registro[coluna] =
+          linha[indiceColuna] ?? '';
+      },
+    );
+
+    registro['Conta Contábil Número'] =
+      contaContabilNumeroRap;
+
+    registro['Conta Contábil Nome'] =
+      contaContabilNomeRap;
+
+    linhas.push(registro);
+  }
+
+  return {
+    tipo,
+    colunas,
+    linhas,
+    linhaInicialDados,
+  };
+}
 
   /*
    * =====================================================
