@@ -38,32 +38,166 @@ function numero(valor: unknown) {
     return 0;
   }
 
+  /*
+   * Quando o valor já chega como número,
+   * preservamos exatamente o valor recebido.
+   */
   if (typeof valor === 'number') {
-    return Number.isFinite(valor) ? valor : 0;
+    return Number.isFinite(valor)
+      ? valor
+      : 0;
   }
 
   let valorTexto = texto(valor)
     .replace(/\s/g, '')
-    .replace(/R\$/gi, '');
+    .replace(/R\$/gi, '')
+    .replace(/[^\d,.\-]/g, '');
 
   if (!valorTexto) {
     return 0;
   }
 
+  const possuiVirgula =
+    valorTexto.includes(',');
+
+  const possuiPonto =
+    valorTexto.includes('.');
+
+  /*
+   * =====================================================
+   * VALOR COM PONTO E VÍRGULA
+   * =====================================================
+   *
+   * Precisamos descobrir qual dos dois é o
+   * separador decimal.
+   *
+   * Exemplos brasileiros:
+   *
+   * 2.024.534,00 -> 2024534.00
+   * 31.130,70    -> 31130.70
+   *
+   * Exemplos enviados pelo Excel/SheetJS:
+   *
+   * 2,024,534.00 -> 2024534.00
+   * 31,130.70    -> 31130.70
+   *
+   * O último separador existente no texto é
+   * considerado o separador decimal.
+   */
   if (
-    valorTexto.includes(',') &&
-    valorTexto.includes('.')
+    possuiVirgula &&
+    possuiPonto
   ) {
-    valorTexto = valorTexto
-      .replace(/\./g, '')
-      .replace(',', '.');
-  } else if (valorTexto.includes(',')) {
-    valorTexto = valorTexto.replace(',', '.');
+    const ultimaVirgula =
+      valorTexto.lastIndexOf(',');
+
+    const ultimoPonto =
+      valorTexto.lastIndexOf('.');
+
+    /*
+     * Padrão brasileiro:
+     * 2.024.534,00
+     */
+    if (
+      ultimaVirgula >
+      ultimoPonto
+    ) {
+      valorTexto = valorTexto
+        .replace(/\./g, '')
+        .replace(',', '.');
+    }
+
+    /*
+     * Padrão americano:
+     * 2,024,534.00
+     */
+    else {
+      valorTexto =
+        valorTexto.replace(
+          /,/g,
+          '',
+        );
+    }
   }
 
-  const convertido = Number(valorTexto);
+  /*
+   * =====================================================
+   * SOMENTE VÍRGULA
+   * =====================================================
+   *
+   * Consideramos a vírgula como separador
+   * decimal.
+   *
+   * 31130,70 -> 31130.70
+   * 20,00    -> 20.00
+   * 868,30   -> 868.30
+   */
+  else if (possuiVirgula) {
+    const partes =
+      valorTexto.split(',');
 
-  return Number.isFinite(convertido)
+    /*
+     * Mais de uma vírgula:
+     * provavelmente separadores de milhar
+     * no padrão americano.
+     *
+     * Exemplo:
+     * 2,024,534
+     */
+    if (partes.length > 2) {
+      valorTexto =
+        valorTexto.replace(
+          /,/g,
+          '',
+        );
+    } else {
+      valorTexto =
+        valorTexto.replace(
+          ',',
+          '.',
+        );
+    }
+  }
+
+  /*
+   * =====================================================
+   * SOMENTE PONTO
+   * =====================================================
+   *
+   * Pode ser:
+   *
+   * 2024534.00
+   * 31130.70
+   *
+   * ou eventualmente:
+   *
+   * 2.024.534
+   *
+   * Se houver mais de um ponto, tratamos
+   * como separador de milhar.
+   */
+  else if (possuiPonto) {
+    const quantidadePontos =
+      (
+        valorTexto.match(/\./g) ||
+        []
+      ).length;
+
+    if (quantidadePontos > 1) {
+      valorTexto =
+        valorTexto.replace(
+          /\./g,
+          '',
+        );
+    }
+  }
+
+  const convertido =
+    Number(valorTexto);
+
+  return Number.isFinite(
+    convertido,
+  )
     ? convertido
     : 0;
 }
